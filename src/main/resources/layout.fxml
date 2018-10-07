@@ -23,7 +23,8 @@
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="769.0" prefWidth="271.0">
                      <children>
                         <TreeView fx:id="fileTreeView" prefHeight="200.0" prefWidth="200.0" showRoot="false" AnchorPane.bottomAnchor="40.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                        <Button layoutX="25.0" layoutY="532.0" mnemonicParsing="false" onAction="#setPackage" text="Set Project Root" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="532.0" />
+                        <Button layoutX="25.0" layoutY="532.0" mnemonicParsing="false" onAction="#setProjectRoot" text="Set Project Root" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="532.0" />
+                        <Button layoutX="109.0" layoutY="517.0" mnemonicParsing="false" onAction="#setModulePackage" text="SetModulePackage" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="517.0" />
                      </children>
                   </AnchorPane>
               </content>
@@ -58,7 +59,7 @@
                     <content>
                       <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                            <children>
-                              <CheckBox layoutX="13.0" layoutY="9.0" mnemonicParsing="false" onAction="#toggleSignPack" text="Sign Pack" />
+                              <CheckBox fx:id="toggleSignPack" layoutX="13.0" layoutY="9.0" mnemonicParsing="false" onAction="#toggleSignPack" text="Sign Pack" />
                               <TreeTableView layoutX="49.0" layoutY="-34.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="40.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="30.0">
                                 <columns>
                                   <TreeTableColumn prefWidth="75.0" sortable="false" text="KeyStorePath" />
