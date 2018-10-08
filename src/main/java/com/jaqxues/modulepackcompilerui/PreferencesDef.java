@@ -11,8 +11,11 @@ import java.util.List;
 public enum PreferencesDef {
     PROJECT_ROOT("ProjectRoot", String.class, "."),
     MODULE_PACKAGE("ModulePackage", String.class, null),
-    ATTRIBUTES("Attributes", List.class, new ArrayList<String[]>()),
-    SIGN_PACK("SignPack", Boolean.class, true);
+    ATTRIBUTES("Attributes", List.class, new ArrayList<List<String>>()),
+    SIGN_PACK("SignPack", Boolean.class, true),
+    SIGN_CONFIGS("SingConfigs", List.class, new ArrayList<String>()),
+    SDK_BUILD_TOOLS("SdkBuildTools", String.class, null),
+    JDK_INSTALLATION_PATH("JDKInstallation", String.class, null);
 
     private String key;
     private Class<?> type;
