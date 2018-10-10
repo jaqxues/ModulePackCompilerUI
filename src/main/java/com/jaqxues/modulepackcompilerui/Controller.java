@@ -1,27 +1,17 @@
 package com.jaqxues.modulepackcompilerui;
 
-import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
 import com.sun.istack.internal.Nullable;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Optional;
 
-import javax.swing.text.LabelView;
-import javax.swing.text.html.Option;
-
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -38,13 +28,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.util.Callback;
-import sun.plugin2.jvm.RemoteJVMLauncher;
-import sun.reflect.generics.tree.Tree;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.putPref;
@@ -55,6 +42,7 @@ import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_P
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.PROJECT_ROOT;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
+import static com.jaqxues.modulepackcompilerui.PreferencesDef.SELECTED_SIGN_CONFIG;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_CONFIGS;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_PACK;
 
@@ -73,15 +61,15 @@ public class Controller {
     @FXML
     private CheckBox toggleSignPack;
     @FXML
-    private TableView<List<String>> keyTable;
+    private TableView<SignConfig> keyTable;
     @FXML
-    private TableColumn<List<String>, String> storePathCol;
+    private TableColumn<SignConfig, String> storePathCol;
     @FXML
-    private TableColumn<List<String>, String> storePasswordCol;
+    private TableColumn<SignConfig, String> storePasswordCol;
     @FXML
-    private TableColumn<List<String>, String> keyAliasCol;
+    private TableColumn<SignConfig, String> keyAliasCol;
     @FXML
-    private TableColumn<List<String>, String> keyPasswordCol;
+    private TableColumn<SignConfig, String> keyPasswordCol;
 
 
     @FXML
@@ -134,23 +122,30 @@ public class Controller {
         toggleSignPack.setSelected(getPref(SIGN_PACK));
 
         storePathCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().get(0))
+                new SimpleStringProperty(value.getValue().getStorePath())
         );
         storePasswordCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().get(1))
+                new SimpleStringProperty(value.getValue().getStorePassword())
         );
         keyAliasCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().get(2))
+                new SimpleStringProperty(value.getValue().getKeyAlias())
         );
         keyPasswordCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().get(3))
+                new SimpleStringProperty(value.getValue().getKeyPassword())
         );
 
-        List<List<String>> configs = PreferenceManager.getPref(SIGN_CONFIGS);
+        List<SignConfig> configs = getPref(SIGN_CONFIGS);
         if (!configs.isEmpty()) {
-            for (List<String> config : configs)
+            for (SignConfig config : configs)
                 keyTable.getItems().add(config);
         }
+
+        SignConfig selected = getPref(SELECTED_SIGN_CONFIG);
+        if (selected == null || !keyTable.getItems().contains(selected)) {
+            putPref(SELECTED_SIGN_CONFIG, new ArrayList<>());
+        } else
+            keyTable.getSelectionModel().select(selected);
+
     }
 
     private void attrInputDialog(@Nullable String originalName, @Nullable String originalValue) {
@@ -218,10 +213,12 @@ public class Controller {
         });
     }
 
-    private void keyInputDialog(@Nullable List<String> oldConfig) {
+    //TODO implement Pair Attributes, no List
+
+    private void keyInputDialog(@Nullable SignConfig oldConfig) {
         boolean edit = oldConfig != null;
 
-        Dialog<List<String>> dialog = new Dialog<>();
+        Dialog<SignConfig> dialog = new Dialog<>();
         if (edit) {
             dialog.setTitle("Edit Key Configuration");
             dialog.setHeaderText("Edit the Keys configuration");
@@ -250,10 +247,10 @@ public class Controller {
         TextField keyPassword = new TextField();
         keyPassword.setPromptText("Key Password");
         if (edit) {
-            storePath.setText(oldConfig.get(0));
-            storePassword.setText(oldConfig.get(1));
-            keyAlias.setText(oldConfig.get(2));
-            keyPassword.setText(oldConfig.get(3));
+            storePath.setText(oldConfig.getStorePath());
+            storePassword.setText(oldConfig.getStorePassword());
+            keyAlias.setText(oldConfig.getKeyAlias());
+            keyPassword.setText(oldConfig.getKeyPassword());
         }
 
         Button storeButtonChooser = new Button("Browse...");
@@ -285,21 +282,20 @@ public class Controller {
                     && !storePassword.getText().trim().isEmpty()
                     && !keyAlias.getText().trim().isEmpty()
                     && !keyPassword.getText().trim().isEmpty()) {
-                List<String> strings = new LinkedList<>();
-                strings.add(storePath.getText().trim());
-                strings.add(storePassword.getText().trim());
-                strings.add(keyAlias.getText().trim());
-                strings.add(keyPassword.getText().trim());
-                return strings;
+                return new SignConfig(
+                        storePath.getText().trim(),
+                        storePassword.getText().trim(),
+                        keyAlias.getText().trim(),
+                        keyPassword.getText().trim());
             }
             return null;
         });
 
-        Optional<List<String>> result = dialog.showAndWait();
+        Optional<SignConfig> result = dialog.showAndWait();
 
-        result.ifPresent(strings -> {
-            PreferenceManager.addToCollection(SIGN_CONFIGS, strings);
-            keyTable.getItems().add(strings);
+        result.ifPresent(signConfig -> {
+            PreferenceManager.addToCollection(SIGN_CONFIGS, signConfig);
+            keyTable.getItems().add(signConfig);
         });
     }
 
@@ -385,7 +381,7 @@ public class Controller {
     }
 
     public void editKeyConfig(ActionEvent event) {
-        List<String> selected = keyTable.getSelectionModel().getSelectedItem();
+        SignConfig selected = keyTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Please Select a Key in the List to Edit it");
@@ -399,7 +395,7 @@ public class Controller {
     }
 
     public void removeKeyConfig(ActionEvent event) {
-        List<String> selected = keyTable.getSelectionModel().getSelectedItem();
+        SignConfig selected = keyTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Please Select a Key in the List to Remove it");
@@ -429,6 +425,13 @@ public class Controller {
         };
 
         try {
+            PackCompiler packCompiler = new PackCompiler(new PackOptions(null, null, null, null, null));
+            packCompiler.init(new Callback<Double, Double>() {
+                @Override
+                public Double call(Double param) {
+                    return null;
+                }
+            });
             PackCompiler.init(getPref(SIGN_PACK) ? keyTable.getSelectionModel().getSelectedItem() : null, callback, false);
             LogUtils.getLogger().debug("Finished Pack Compiler");
         } catch (Exception e) {

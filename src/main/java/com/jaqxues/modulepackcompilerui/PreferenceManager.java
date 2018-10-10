@@ -48,7 +48,7 @@ public class PreferenceManager {
                     entry.getKey(),
                     GsonSingleton.getSingleton().fromJson(
                             entry.getValue(),
-                            preferencesDef.getType()
+                            preferencesDef.getType() != null ? preferencesDef.getType() : preferencesDef.getTypeToken()
                     )
             );
         }
@@ -116,7 +116,7 @@ public class PreferenceManager {
      * @return The new Boolean Value
      */
     public static boolean togglePref(PreferencesDef pref) {
-        boolean oldValue = (boolean) getPref(pref);
+        boolean oldValue = getPref(pref);
         putPref(
                 pref,
                 !oldValue

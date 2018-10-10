@@ -1,7 +1,12 @@
 package com.jaqxues.modulepackcompilerui;
 
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+
+import javafx.scene.control.TableCell;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -13,17 +18,25 @@ public enum PreferencesDef {
     MODULE_PACKAGE("ModulePackage", String.class, null),
     ATTRIBUTES("Attributes", List.class, new ArrayList<List<String>>()),
     SIGN_PACK("SignPack", Boolean.class, true),
-    SIGN_CONFIGS("SingConfigs", List.class, new ArrayList<String>()),
+    SIGN_CONFIGS("SingConfigs", new TypeToken<List<SignConfig>>() {}.getType(), new ArrayList<SignConfig>()),
+    SELECTED_SIGN_CONFIG("SelectedSignConfig", SignConfig.class, null),
     SDK_BUILD_TOOLS("SdkBuildTools", String.class, null),
     JDK_INSTALLATION_PATH("JDKInstallation", String.class, null);
 
     private String key;
     private Class<?> type;
     private Object defaultValue;
+    private Type typeToken;
 
     PreferencesDef(String key, Class type, Object defaultValue) {
         this.key = key;
         this.type = type;
+        this.defaultValue = defaultValue;
+    }
+
+    PreferencesDef(String key, Type type, Object defaultValue) {
+        this.key = key;
+        this.typeToken = type;
         this.defaultValue = defaultValue;
     }
 
@@ -45,5 +58,9 @@ public enum PreferencesDef {
 
     public Object getDefaultValue() {
         return defaultValue;
+    }
+
+    public Type getTypeToken() {
+        return typeToken;
     }
 }

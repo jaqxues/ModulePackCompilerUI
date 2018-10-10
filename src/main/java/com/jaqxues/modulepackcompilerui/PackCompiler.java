@@ -16,6 +16,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
+import javafx.concurrent.Task;
 import javafx.util.Callback;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
@@ -29,9 +30,16 @@ import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
  * Date: 07.10.2018 - Time 16:29.
  */
 
-public class PackCompiler {
+public class PackCompiler extends Task<File> {
 
-    public static void init(List<String> signConfig, Callback<Double, Double> callback, boolean debug) throws Exception {
+    private PackOptions packOptions;
+
+    public PackCompiler(PackOptions packOptions) {
+        this.packOptions = packOptions;
+
+    }
+
+    public void init(Callback<Double, Double> callback) throws Exception {
         File currentPath = new File("Files");
         File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
         File freshCompiledDevJar = new File(currentPath.getAbsolutePath(), "freshCompiledDevJar.jar");
@@ -45,6 +53,8 @@ public class PackCompiler {
         try {
             compiledPath.mkdirs();
 
+            copySources(compiledPath, sourceFiles);
+
             File sourceJava = new File(getPref(PROJECT_ROOT)
                     + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
                     + getPref(MODULE_PACKAGE));
@@ -54,8 +64,6 @@ public class PackCompiler {
                     + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
                     + getPref(MODULE_PACKAGE)
             );
-
-            copySources(compiledPath, sourceJava, sourceKotlin);
 
             // Set Progress to 10%
             callback.call(0.1d);
@@ -153,7 +161,7 @@ public class PackCompiler {
     }
 
     private static void signOutput(File signInput) throws Exception {
-        String command = "call \"" + getPref(JDK_INSTALLATION_PATH) + "\\bin\\jarsigner.exe\" -tsa https://timestamp.digicert.com -keystore D:\\Documents\\Jacques\\CodeProjects\\IdeaProjects\\SnapTools\\jaqxues\\SnapTools\\KeysCertificates\\KeyStore\\KeyStore.jks -signedjar D:\\Documents\\Jacques\\CodeProjects\\IdeaProjects\\SnapTools\\jaqxues\\ModulePackCompilerUI\\Files\\Packs\\as.jar " + signInput.getAbsolutePath() + " Master";
+        String command = "\"" + getPref(JDK_INSTALLATION_PATH) + "\\bin\\jarsigner.exe\" -tsa https://timestamp.digicert.com -keystore D:\\Documents\\Jacques\\CodeProjects\\IdeaProjects\\SnapTools\\jaqxues\\SnapTools\\KeysCertificates\\KeyStore\\KeyStore.jks -signedjar D:\\Documents\\Jacques\\CodeProjects\\IdeaProjects\\SnapTools\\jaqxues\\ModulePackCompilerUI\\Files\\Packs\\as.jar " + signInput.getAbsolutePath() + " Master";
         System.out.println(command);
         Process process = Runtime.getRuntime().exec(command);
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(process.getOutputStream());
@@ -164,5 +172,10 @@ public class PackCompiler {
 
     private static void adbPush(File file) throws Exception {
         cmdProcess("adb push " + file.getAbsolutePath() + ".jar" + "/sdcard/SnapTools/ModulePacks");
+    }
+
+    @Override
+    protected File call() throws Exception {
+        return null;
     }
 }
