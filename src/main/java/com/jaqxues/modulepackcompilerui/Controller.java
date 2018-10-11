@@ -52,11 +52,11 @@ public class Controller {
     private TreeView<File> fileTreeView;
 
     @FXML
-    private TableView<List<String>> attrTable;
+    private TableView<String> attrTable;
     @FXML
-    private TableColumn<List<String>, String> attrNameCol;
+    private TableColumn<String, String> attrNameCol;
     @FXML
-    private TableColumn<List<String>, String> attrValueCol;
+    private TableColumn<String, String> attrValueCol;
 
     @FXML
     private CheckBox toggleSignPack;
@@ -109,13 +109,13 @@ public class Controller {
 
     public void initAttributes() {
         attrNameCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().get(0)));
+                new SimpleStringProperty(value.getValue().split("=")[0]));
         attrValueCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().get(1)));
+                new SimpleStringProperty(value.getValue().split("=")[1]));
 
-        List<List<String>> lists = getPref(ATTRIBUTES);
-        for (List<String> list : lists)
-            attrTable.getItems().add(list);
+        List<String> list = getPref(ATTRIBUTES);
+        for (String item : list)
+            attrTable.getItems().add(item);
     }
 
     public void initSigning() {
@@ -150,7 +150,7 @@ public class Controller {
 
     private void attrInputDialog(@Nullable String originalName, @Nullable String originalValue) {
         boolean edit = originalName != null && originalValue != null;
-        Dialog<List<String>> dialog = new Dialog<>();
+        Dialog<String> dialog = new Dialog<>();
         if (edit) {
             dialog.setTitle("Edit Attribute");
             dialog.setHeaderText("Edit the Attribute Values");
@@ -197,15 +197,12 @@ public class Controller {
             if (param == ButtonType.APPLY
                     && !name.getText().trim().isEmpty()
                     && !value.getText().trim().isEmpty()) {
-                List<String> strings = new ArrayList<>();
-                strings.add(name.getText().trim());
-                strings.add(value.getText().trim());
-                return strings;
+                return name.getText().trim() + "=" + value.getText().trim();
             }
             return null;
         });
 
-        Optional<List<String>> result = dialog.showAndWait();
+        Optional<String> result = dialog.showAndWait();
 
         result.ifPresent(strings -> {
             PreferenceManager.addToCollection(ATTRIBUTES, strings);
@@ -347,29 +344,29 @@ public class Controller {
     }
 
     public void editAttribute(ActionEvent event) {
-        List<String> strings = attrTable.getSelectionModel().getSelectedItem();
-        if (strings == null) {
+        String attribute = attrTable.getSelectionModel().getSelectedItem();
+        if (attribute == null) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Please select an attribute to edit it");
             alert.show();
             return;
         }
-        attrTable.getItems().remove(strings);
-        removeFromCollection(ATTRIBUTES, strings);
+        attrTable.getItems().remove(attribute);
+        removeFromCollection(ATTRIBUTES, attribute);
 
-        attrInputDialog(strings.get(0), strings.get(1));
+        attrInputDialog(attribute.split("=", 2)[0], attribute.split("=", 2)[1]);
     }
 
     public void removeAttribute(ActionEvent event) {
-        List<String> attributes = attrTable.getSelectionModel().getSelectedItem();
-        if (attributes == null) {
+        String attribute = attrTable.getSelectionModel().getSelectedItem();
+        if (attribute == null) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Please select an Attribute to delete it");
             alert.show();
             return;
         }
-        attrTable.getItems().remove(attributes);
-        removeFromCollection(ATTRIBUTES, attributes);
+        attrTable.getItems().remove(attribute);
+        removeFromCollection(ATTRIBUTES, attribute);
     }
 
     public void toggleSignPack(ActionEvent event) {
@@ -425,14 +422,8 @@ public class Controller {
         };
 
         try {
-            PackCompiler packCompiler = new PackCompiler(new PackOptions(null, null, null, null, null));
-            packCompiler.init(new Callback<Double, Double>() {
-                @Override
-                public Double call(Double param) {
-                    return null;
-                }
-            });
-            PackCompiler.init(getPref(SIGN_PACK) ? keyTable.getSelectionModel().getSelectedItem() : null, callback, false);
+//            packCompiler.init(param -> null);
+//            PackCompiler.init(getPref(SIGN_PACK) ? keyTable.getSelectionModel().getSelectedItem() : null, callback, false);
             LogUtils.getLogger().debug("Finished Pack Compiler");
         } catch (Exception e) {
             LogUtils.getLogger().error("Could not compile Pack", e);

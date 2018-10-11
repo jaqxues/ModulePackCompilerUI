@@ -14,12 +14,15 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import javafx.concurrent.Task;
 import javafx.util.Callback;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.PreferenceManager.removeFromCollection;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.PROJECT_ROOT;
@@ -31,21 +34,23 @@ import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
  */
 
 public class PackCompiler extends Task<File> {
+    private File[] sources;
+    private String[] attributes;
+    private File jarTarget;
+    private SignConfig signConfig;
+    private File currentPath = new File("Files");
+    private File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
+    private File freshCompiledDevJar = new File(currentPath.getAbsolutePath(), "freshCompiledDevJar.jar");
+    private File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
 
-    private PackOptions packOptions;
-
-    public PackCompiler(PackOptions packOptions) {
-        this.packOptions = packOptions;
-
+    private PackCompiler(File[] sources, String[] attributes, File jarTarget, SignConfig signConfig) {
+        this.sources = sources;
+        this.attributes = attributes;
+        this.jarTarget = jarTarget;
+        this.signConfig = signConfig;
     }
 
-    public void init(Callback<Double, Double> callback) throws Exception {
-        File currentPath = new File("Files");
-        File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
-        File freshCompiledDevJar = new File(currentPath.getAbsolutePath(), "freshCompiledDevJar.jar");
-        File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
-        File jarTarget = new File(currentPath.getAbsolutePath(), "\\Packs\\STModulePack");
-
+    public void init() throws Exception {
 
         // ========================================================================================
         // Copy Class Files
@@ -53,8 +58,8 @@ public class PackCompiler extends Task<File> {
         try {
             compiledPath.mkdirs();
 
-            copySources(compiledPath, sourceFiles);
-
+            copySources(compiledPath, sources);
+/*
             File sourceJava = new File(getPref(PROJECT_ROOT)
                     + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
                     + getPref(MODULE_PACKAGE));
@@ -63,10 +68,7 @@ public class PackCompiler extends Task<File> {
             File sourceKotlin = new File(getPref(PROJECT_ROOT)
                     + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
                     + getPref(MODULE_PACKAGE)
-            );
-
-            // Set Progress to 10%
-            callback.call(0.1d);
+            );*/
 
             FileUtils.copyFileOrFolder(
                     freshCompiledDevJar,
@@ -79,32 +81,33 @@ public class PackCompiler extends Task<File> {
             LogUtils.getLogger().error("Could not copy Files", e);
             throw e;
         }
-        callback.call(0.2d);
 
-        createManifestFile(currentPath);
+        File manifest = createManifestFile();
 
         jarTarget.getParentFile().mkdirs();
+
+        String[] commands = getCommands(manifest);
         try {
-            String currentCommand = getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + getPref(MODULE_PACKAGE);
-            cmdProcess(currentCommand);
-
-            currentCommand = getPref(SDK_BUILD_TOOLS) + "\\dx.bat --dex --output=" + jarTarget.getAbsolutePath() + "_unsigned.jar " + compiledPath.getAbsolutePath();
-            cmdProcess(currentCommand);
-
-            File manifest = new File(currentPath, "Manifest.txt");
-            currentCommand = getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar";
-
-            cmdProcess(currentCommand);
+            for (String string : commands)
+                cmdProcess(string);
         } catch (CMDException e) {
             throw new NotCompiledException("Error while executing commands in CMD", e);
         }
 
-        signOutput(new File(jarTarget.getAbsoluteFile() + "_unsigned.jar"));
+        signOutput();
 
-        adbPush(jarTarget);
+        adbPush();
     }
 
-    private static void createManifestFile(File currentPath) throws IOException {
+    private String[] getCommands(File manifest) {
+        return new String[]{
+                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + getPref(MODULE_PACKAGE),
+                getPref(SDK_BUILD_TOOLS) + "\\dx.bat --dex --output=" + jarTarget.getAbsolutePath() + "_unsigned.jar " + compiledPath.getAbsolutePath(),
+                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
+        };
+    }
+
+    private File createManifestFile() throws IOException {
         File manifest = new File(currentPath, "Manifest.txt");
         if (!manifest.exists())
             manifest.createNewFile();
@@ -112,6 +115,7 @@ public class PackCompiler extends Task<File> {
         writer.write("Type: Premium\nSCVersion: 10.26.5.0\nPackVersion: 2.0.0.0\nDevelopment: TRUE\nFlavour: prod");
         writer.flush();
         writer.close();
+        return manifest;
     }
 
     private static void copySources(File dest, File... sources) throws IOException, NotCompiledException {
@@ -177,5 +181,57 @@ public class PackCompiler extends Task<File> {
     @Override
     protected File call() throws Exception {
         return null;
+    }
+
+    public static class Builder {
+        private List<File> sources;
+        private List<String> attributes;
+        private File jarTarget;
+        private SignConfig signConfig;
+
+        public List<File> getSources() {
+            return sources;
+        }
+
+        public void setSources(List<File> sources) {
+            this.sources = sources;
+        }
+
+        public List<String> getAttributes() {
+            return attributes;
+        }
+
+        public void setAttributes(List<String> attributes) {
+            this.attributes = attributes;
+        }
+
+        public File getJarTarget() {
+            return jarTarget;
+        }
+
+        public void setJarTarget(File jarTarget) {
+            this.jarTarget = jarTarget;
+        }
+
+        public void setSignConfig(SignConfig signConfig) {
+            this.signConfig = signConfig;
+        }
+
+        public SignConfig getSignConfig() {
+            return signConfig;
+        }
+
+        public PackCompiler build() throws IllegalArgumentException {
+            if (sources == null || sources.size() == 0)
+                throw new IllegalArgumentException("No Source Files specified");
+            if (attributes == null) {
+                LogUtils.getLogger().warn("No Attributes provided");
+                attributes = new ArrayList<>();
+            }
+            if (jarTarget == null) {
+                throw new IllegalArgumentException("No Jar Target Provided");
+            }
+            return new PackCompiler((File[]) sources.toArray(), (String[]) attributes.toArray(), jarTarget, signConfig);
+        }
     }
 }
