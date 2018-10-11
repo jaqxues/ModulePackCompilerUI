@@ -4,6 +4,7 @@ import com.sun.istack.internal.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +32,6 @@ import javafx.scene.control.TreeView;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.util.Callback;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.putPref;
@@ -48,32 +48,21 @@ import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_PACK;
 
 public class Controller {
 
-    @FXML
-    private TreeView<File> fileTreeView;
+    @FXML private TreeView<File> fileTreeView;
 
-    @FXML
-    private TableView<String> attrTable;
-    @FXML
-    private TableColumn<String, String> attrNameCol;
-    @FXML
-    private TableColumn<String, String> attrValueCol;
+    @FXML private TableView<String> attrTable;
+    @FXML private TableColumn<String, String> attrNameCol;
+    @FXML private TableColumn<String, String> attrValueCol;
 
-    @FXML
-    private CheckBox toggleSignPack;
-    @FXML
-    private TableView<SignConfig> keyTable;
-    @FXML
-    private TableColumn<SignConfig, String> storePathCol;
-    @FXML
-    private TableColumn<SignConfig, String> storePasswordCol;
-    @FXML
-    private TableColumn<SignConfig, String> keyAliasCol;
-    @FXML
-    private TableColumn<SignConfig, String> keyPasswordCol;
+    @FXML private CheckBox toggleSignPack;
+    @FXML private TableView<SignConfig> keyTable;
+    @FXML private TableColumn<SignConfig, String> storePathCol;
+    @FXML private TableColumn<SignConfig, String> storePasswordCol;
+    @FXML private TableColumn<SignConfig, String> keyAliasCol;
+    @FXML private TableColumn<SignConfig, String> keyPasswordCol;
 
 
-    @FXML
-    private ProgressBar progressBar;
+    @FXML private ProgressBar progressBar;
 
     // ============================================================================================
     // INIT METHODS
@@ -141,11 +130,8 @@ public class Controller {
         }
 
         SignConfig selected = getPref(SELECTED_SIGN_CONFIG);
-        if (selected == null || !keyTable.getItems().contains(selected)) {
-            putPref(SELECTED_SIGN_CONFIG, new ArrayList<>());
-        } else
+        if (selected != null && keyTable.getItems().contains(selected))
             keyTable.getSelectionModel().select(selected);
-
     }
 
     private void attrInputDialog(@Nullable String originalName, @Nullable String originalValue) {
@@ -209,8 +195,6 @@ public class Controller {
             attrTable.getItems().add(strings);
         });
     }
-
-    //TODO implement Pair Attributes, no List
 
     private void keyInputDialog(@Nullable SignConfig oldConfig) {
         boolean edit = oldConfig != null;
@@ -412,18 +396,32 @@ public class Controller {
             return;
         }
 
-        progressBar.setVisible(true);
-        Callback<Double, Double> callback = param -> {
-            if (param == -1d)
-                progressBar.setVisible(false);
-            else
-                progressBar.setProgress(param);
-            return param;
-        };
+        List<File> sources = Arrays.asList(
+                new File(
+                getPref(PROJECT_ROOT)
+//                        + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
+//                        + getPref(MODULE_PACKAGE)
+                        + "app/build/intermediates/transforms/desugar/pack/release/0/"
+                        + getPref(MODULE_PACKAGE)),
+                new File(
+                        getPref(PROJECT_ROOT)
+//                        + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
+//                        + getPref(MODULE_PACKAGE)
+                                + "/app/build/tmp/kotlin-classes/packRelease/"
+                                + getPref(MODULE_PACKAGE))
+        );
+
+        List<String> attributes = new ArrayList<>();
 
         try {
-//            packCompiler.init(param -> null);
-//            PackCompiler.init(getPref(SIGN_PACK) ? keyTable.getSelectionModel().getSelectedItem() : null, callback, false);
+            PackCompiler packCompiler = new PackCompiler.Builder()
+                    .setAttributes(attrTable.getItems())
+                    .setJarTarget(new File(""))
+                    .setSignConfig(keyTable.getSelectionModel().getSelectedItem())
+                    .setSources(sources)
+                    .build();
+            packCompiler.call();
+
             LogUtils.getLogger().debug("Finished Pack Compiler");
         } catch (Exception e) {
             LogUtils.getLogger().error("Could not compile Pack", e);
@@ -431,8 +429,6 @@ public class Controller {
             alert.setContentText(e.getMessage());
             alert.show();
         }
-        progressBar.setVisible(false);
-        progressBar.setProgress(0d);
     }
 
     public void openGeneralSettings(ActionEvent event) {
