@@ -2,6 +2,7 @@ package com.jaqxues.modulepackcompilerui;
 
 import com.jaqxues.modulepackcompilerui.exceptions.CMDException;
 import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
+import com.sun.istack.internal.NotNull;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,6 +20,7 @@ import java.util.List;
 import javafx.concurrent.Task;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.PreferenceManager.togglePref;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
@@ -45,7 +47,17 @@ public class PackCompiler extends Task<File> {
         this.signConfig = signConfig;
     }
 
-    private static void copySources(File dest, File... sources) throws IOException, NotCompiledException {
+    /**
+     * Copy Files in <code>sources</code> to the <code>dest</code> Folder. This clears the
+     * <code>dest</code> Folder, then copies every single file from the <code>sources</code>
+     * recursively into the Destination Folder.
+     *
+     * @param dest The Destination Path in form of a File
+     * @param sources The Source File Directories containing the files you want to copy
+     * @throws IOException Java Exception while copying and deleting files
+     * @throws NotCompiledException In case a Source in <code>sources</code> has not been found
+     */
+    private static void copySources(@NotNull File dest, @NotNull File... sources) throws IOException, NotCompiledException {
         // Delete Previous Files
         Files.walkFileTree(dest.toPath(), new SimpleFileVisitor<Path>() {
             @Override
@@ -91,18 +103,29 @@ public class PackCompiler extends Task<File> {
         }
     }
 
-    private static void signOutput(File signInput) throws Exception {
-        String command = "\"" + getPref(JDK_INSTALLATION_PATH) + "\\bin\\jarsigner.exe\" -tsa https://timestamp.digicert.com -keystore D:\\Documents\\Jacques\\CodeProjects\\IdeaProjects\\SnapTools\\jaqxues\\SnapTools\\KeysCertificates\\KeyStore\\KeyStore.jks -signedjar D:\\Documents\\Jacques\\CodeProjects\\IdeaProjects\\SnapTools\\jaqxues\\ModulePackCompilerUI\\Files\\Packs\\as.jar " + signInput.getAbsolutePath() + " Master";
-        System.out.println(command);
+    /**
+     * Signs the {@link PackCompiler#jarTarget}_unsigned.jar, outputs {@link PackCompiler#jarTarget}.jar
+     * @throws Exception Runtime Exception while running command and Signing the Jar
+     */
+    private void signOutput() throws Exception {
+        String command = String.format("\"%s\\bin\\jarsigner.exe\" -tsa https://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
+                getPref(JDK_INSTALLATION_PATH),
+                signConfig.getStorePath(),
+                jarTarget.getAbsolutePath(),
+                jarTarget.getAbsolutePath(),
+                signConfig.getKeyAlias()
+                );
+        LogUtils.getLogger().debug("Generated Command: %s", command);
         Process process = Runtime.getRuntime().exec(command);
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(process.getOutputStream());
-        outputStreamWriter.append("");
-        outputStreamWriter.flush();
+        outputStreamWriter.append(signConfig.getStorePassword())
+                .append(signConfig.getKeyPassword())
+                .flush();
         outputStreamWriter.close();
     }
 
-    private static void adbPush(File file) throws Exception {
-        cmdProcess("adb push " + file.getAbsolutePath() + ".jar" + "/sdcard/SnapTools/ModulePacks");
+    private static void adbPush(File file, String pushPath) throws Exception {
+        cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + pushPath);
     }
 
     public void init() throws Exception {
@@ -112,7 +135,6 @@ public class PackCompiler extends Task<File> {
         // ========================================================================================
         try {
             compiledPath.mkdirs();
-
             copySources(compiledPath, sources);
 
             FileUtils.copyFileOrFolder(
@@ -120,8 +142,6 @@ public class PackCompiler extends Task<File> {
                     preCompiledSToolsJar,
                     StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING
             );
-
-
         } catch (IOException e) {
             LogUtils.getLogger().error("Could not copy Files", e);
             throw e;
@@ -139,9 +159,9 @@ public class PackCompiler extends Task<File> {
             throw new NotCompiledException("Error while executing commands in CMD", e);
         }
 
-        signOutput(jarTarget);
+        signOutput();
 
-        adbPush(jarTarget);
+        adbPush(jarTarget, "/sdcard/SnapTools/ModulePacks/");
     }
 
     private String[] getCommands(File manifest) {
@@ -157,7 +177,14 @@ public class PackCompiler extends Task<File> {
         if (!manifest.exists())
             manifest.createNewFile();
         FileWriter writer = new FileWriter(manifest);
-        writer.write("Type: Premium\nSCVersion: 10.26.5.0\nPackVersion: 2.0.0.0\nDevelopment: TRUE\nFlavour: prod");
+        StringBuilder builder = new StringBuilder();
+        String prefix = "";
+        for (String string : attributes) {
+            builder.append(prefix)
+                    .append(string.replace("=", ": "));
+            prefix = "\n";
+        }
+        writer.write(builder.toString());
         writer.flush();
         writer.close();
         return manifest;
