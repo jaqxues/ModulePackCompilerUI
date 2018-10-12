@@ -122,6 +122,8 @@ public class PackCompiler extends Task<File> {
                 .append(signConfig.getKeyPassword())
                 .flush();
         outputStreamWriter.close();
+        if (process.waitFor() != 0)
+            throw new CMDException("Could not execute Signing");
     }
 
     private static void adbPush(File file, String pushPath) throws Exception {

@@ -6,7 +6,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,9 +25,6 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TreeCell;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -48,8 +44,6 @@ import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_PACK;
 
 public class Controller {
 
-    @FXML private TreeView<File> fileTreeView;
-
     @FXML private TableView<String> attrTable;
     @FXML private TableColumn<String, String> attrNameCol;
     @FXML private TableColumn<String, String> attrValueCol;
@@ -68,30 +62,7 @@ public class Controller {
     // INIT METHODS
     // ============================================================================================
 
-    private static TreeItem<File> createRootItem(File file) {
-        TreeItem<File> item = new TreeItem<>(file);
-        File[] children = file.listFiles();
-        if (children != null)
-            for (File child : children)
-                item.getChildren().add(createRootItem(child));
-        return item;
-    }
-
     public void initialize() {
-        fileTreeView.setRoot(createRootItem(new File((String) getPref(PROJECT_ROOT))));
-        fileTreeView.setCellFactory((param ->
-                new TreeCell<File>() {
-                    @Override
-                    protected void updateItem(File item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (item != null)
-                            setText(item.getName());
-                        else
-                            setText("");
-                    }
-                }
-        ));
-
         initAttributes();
         initSigning();
     }
@@ -239,9 +210,8 @@ public class Controller {
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("KeyStore Files", "*.jks")
         );
-        storeButtonChooser.setOnAction(event -> {
-            fileChooser.showOpenDialog(Main.getStage());
-        });
+        storeButtonChooser.setOnAction(event ->
+                fileChooser.showOpenDialog(Main.getStage()));
 
         grid.add(new Label("KeyStore Path: "), 0, 0);
         grid.add(storePath, 1, 0);
@@ -300,14 +270,7 @@ public class Controller {
     // ============================================================================================
 
     public void setModulePackage(ActionEvent event) {
-        TreeItem<File> selectedItem = fileTreeView.getSelectionModel().getSelectedItem();
-        if (selectedItem == null) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText("Please Select a Folder to set the Package Root");
-            alert.show();
-            return;
-        }
-        putPref(PreferencesDef.MODULE_PACKAGE, selectedItem.getValue().getAbsolutePath());
+
     }
 
     public void setProjectRoot(ActionEvent event) {
@@ -315,7 +278,6 @@ public class Controller {
         File selectedDirectory = chooser.showDialog(Main.getStage());
         if (selectedDirectory != null) {
             putPref(PreferencesDef.PROJECT_ROOT, selectedDirectory.getAbsolutePath());
-            fileTreeView.setRoot(createRootItem(selectedDirectory));
             return;
         }
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -431,10 +393,10 @@ public class Controller {
         }
     }
 
-    public void openGeneralSettings(ActionEvent event) {
-        Dialog<List<String>> dialog = new Dialog<>();
-        dialog.setTitle("General Settings");
-        dialog.setHeaderText("Path Configurations");
+    public void setSDKBuildTools(ActionEvent event) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Path Configurations");
+        dialog.setHeaderText("SDK Build Tools Installation Path");
 
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
@@ -464,6 +426,45 @@ public class Controller {
             });
             alert.show();
         });
+
+        grid.add(new Label("SDK BuildTools Path"), 0, 0);
+        grid.add(buildToolsPath, 1, 0);
+        grid.add(sdkButtonChooser, 2, 0);
+
+        dialog.getDialogPane().setContent(grid);
+
+        Platform.runLater(buildToolsPath::requestFocus);
+
+        dialog.setResultConverter(param -> {
+            if (param == ButtonType.APPLY
+                    && !buildToolsPath.getText().trim().isEmpty()) {
+                return buildToolsPath.getText().trim();
+            }
+            return null;
+        });
+
+        Optional<String> result = dialog.showAndWait();
+
+        result.ifPresent(strings -> {
+            putPref(SDK_BUILD_TOOLS, result.get());
+        });
+    }
+
+    public void setJDKInstallation(ActionEvent event) {
+        Dialog<String> setJDKDialog = new Dialog<>();
+        setJDKDialog.setTitle("Path Configurations");
+        setJDKDialog.setHeaderText("JDK Installation Path");
+
+        setJDKDialog.getDialogPane().getButtonTypes().addAll(
+                ButtonType.APPLY,
+                ButtonType.CANCEL
+        );
+
+        GridPane grid = new GridPane();
+        grid.setVgap(10);
+        grid.setHgap(10);
+        grid.setPadding(new Insets(0, 150, 10, 10));
+
         TextField jdkPath = new TextField();
         jdkPath.setPromptText("JDK Installation Path");
         Button jdkButtonChooser = new Button("Browse...");
@@ -488,34 +489,25 @@ public class Controller {
             alert.show();
         });
 
-        grid.add(new Label("SDK BuildTools Path"), 0, 0);
-        grid.add(buildToolsPath, 1, 0);
-        grid.add(sdkButtonChooser, 2, 0);
-        grid.add(new Label("JDK Installation Path"), 0, 1);
-        grid.add(jdkPath, 1, 1);
-        grid.add(jdkButtonChooser, 2, 1);
+        grid.add(new Label("JDK Installation Path"), 0, 0);
+        grid.add(jdkPath, 1, 0);
+        grid.add(jdkButtonChooser, 2, 0);
 
-        dialog.getDialogPane().setContent(grid);
+        setJDKDialog.getDialogPane().setContent(grid);
 
-        Platform.runLater(buildToolsPath::requestFocus);
+        Platform.runLater(jdkPath::requestFocus);
 
-        dialog.setResultConverter(param -> {
+        setJDKDialog.setResultConverter(param -> {
             if (param == ButtonType.APPLY
-                    && !buildToolsPath.getText().trim().isEmpty()
                     && !jdkPath.getText().trim().isEmpty()) {
-                List<String> strings = new LinkedList<>();
-                strings.add(buildToolsPath.getText().trim());
-                strings.add(jdkPath.getText().trim());
-                return strings;
+                return jdkPath.getText().trim();
             }
             return null;
         });
 
-        Optional<List<String>> result = dialog.showAndWait();
+        Optional<String> result = setJDKDialog.showAndWait();
 
-        result.ifPresent(strings -> {
-            putPref(SDK_BUILD_TOOLS, result.get().get(0));
-            putPref(JDK_INSTALLATION_PATH, result.get().get(1));
-        });
+        result.ifPresent(string ->
+                putPref(JDK_INSTALLATION_PATH, result.get()));
     }
 }

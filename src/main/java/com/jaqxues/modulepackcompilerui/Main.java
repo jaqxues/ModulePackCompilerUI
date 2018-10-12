@@ -21,9 +21,9 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         PreferenceManager.init();
 
-        Parent root = FXMLLoader.load(getClass().getResource("/layout.fxml"));
+        Parent root2 = FXMLLoader.load(getClass().getResource("/layout.fxml"));
         primaryStage.setTitle("ModulePack Compiler UI");
-        primaryStage.setScene(new Scene(root, 900, 600));
+        primaryStage.setScene(new Scene(root2));
         primaryStage.show();
 
         stage = primaryStage;
