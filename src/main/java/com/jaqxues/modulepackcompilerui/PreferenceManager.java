@@ -23,7 +23,7 @@ public class PreferenceManager {
     private static final String FILE_NAME = "Preferences.json";
     private static final Object WRITE_LOCK = new Object();
     private static File preferencesFile;
-    private static Map<String, Object> preferences = new HashMap<>(16);
+    private static Map<String, Object> preferences = new HashMap<>();
 
     public static void init() throws IOException {
         preferencesFile = new File(FILE_NAME);

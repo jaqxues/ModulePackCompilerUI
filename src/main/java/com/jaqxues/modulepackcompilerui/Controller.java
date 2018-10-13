@@ -3,9 +3,12 @@ package com.jaqxues.modulepackcompilerui;
 import com.sun.istack.internal.Nullable;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,19 +47,37 @@ import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_PACK;
 
 public class Controller {
 
-    @FXML private TableView<String> attrTable;
-    @FXML private TableColumn<String, String> attrNameCol;
-    @FXML private TableColumn<String, String> attrValueCol;
+    @FXML
+    private TableView<String> attrTable;
+    @FXML
+    private TableColumn<String, String> attrNameCol;
+    @FXML
+    private TableColumn<String, String> attrValueCol;
 
-    @FXML private CheckBox toggleSignPack;
-    @FXML private TableView<SignConfig> keyTable;
-    @FXML private TableColumn<SignConfig, String> storePathCol;
-    @FXML private TableColumn<SignConfig, String> storePasswordCol;
-    @FXML private TableColumn<SignConfig, String> keyAliasCol;
-    @FXML private TableColumn<SignConfig, String> keyPasswordCol;
+    @FXML
+    private CheckBox toggleSignPack;
+    @FXML
+    private TableView<SignConfig> keyTable;
+    @FXML
+    private TableColumn<SignConfig, String> storePathCol;
+    @FXML
+    private TableColumn<SignConfig, String> storePasswordCol;
+    @FXML
+    private TableColumn<SignConfig, String> keyAliasCol;
+    @FXML
+    private TableColumn<SignConfig, String> keyPasswordCol;
 
+    @FXML
+    private TableView<SavedConfigModel> savedConfigTable;
+    @FXML
+    private TableColumn<SavedConfigModel, String> savedConfigNameCol;
+    @FXML
+    private TableColumn<SavedConfigModel, String> savedConfigNoticesCol;
+    @FXML
+    private TableColumn<SavedConfigModel, String> savedConfigDateCol;
 
-    @FXML private ProgressBar progressBar;
+    @FXML
+    private ProgressBar progressBar;
 
     // ============================================================================================
     // INIT METHODS
@@ -65,9 +86,10 @@ public class Controller {
     public void initialize() {
         initAttributes();
         initSigning();
+        initSavedConfig();
     }
 
-    public void initAttributes() {
+    private void initAttributes() {
         attrNameCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().split("=")[0]));
         attrValueCol.setCellValueFactory((value) ->
@@ -78,7 +100,7 @@ public class Controller {
             attrTable.getItems().add(item);
     }
 
-    public void initSigning() {
+    private void initSigning() {
         toggleSignPack.setSelected(getPref(SIGN_PACK));
 
         storePathCol.setCellValueFactory((value) ->
@@ -103,6 +125,34 @@ public class Controller {
         SignConfig selected = getPref(SELECTED_SIGN_CONFIG);
         if (selected != null && keyTable.getItems().contains(selected))
             keyTable.getSelectionModel().select(selected);
+    }
+
+    private void initSavedConfig() {
+        savedConfigNameCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getSavedConfigName()));
+        savedConfigNoticesCol.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getSavedConfigNotices()));
+        savedConfigDateCol.setCellValueFactory(param -> {
+            SimpleDateFormat dateFormat = (SimpleDateFormat) DateFormat.getDateTimeInstance();
+            return new SimpleStringProperty(dateFormat.format(new Date(param.getValue().getSavedConfigDate())));
+        });
+        savedConfigTable.getItems().add(
+                new SavedConfigModel()
+                        .setModulePackage("com.ljmu.andre.snaptools")
+                        .setSavedConfigDate(System.currentTimeMillis())
+                        .setSavedConfigName("Default SnapTools Configuration")
+                        .setAttributes(Arrays.asList(
+                                "Development=TRUE",
+                                "PackVersion=1.0.0.0",
+                                "Flavour=prod",
+                                "Type=Premium",
+                                "SCVersion=10.41.6.0"
+                        ))
+                        .setSavedConfigDate(System.currentTimeMillis())
+                        .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
+                        .setModuleSources(Arrays.asList(
+                                "/app/build/intermediates/transforms/desugar/pack/release/0/",
+                                "/app/build/tmp/kotlin-classes/packRelease/"
+                        ))
+        );
     }
 
     private void attrInputDialog(@Nullable String originalName, @Nullable String originalValue) {
@@ -264,6 +314,76 @@ public class Controller {
         return null;
     }
 
+    private void savedConfigInputDialog(@Nullable SavedConfigModel savedConfigModel) {
+        boolean edit = savedConfigModel != null;
+        Dialog<SavedConfigModel> dialog = new Dialog<>();
+        dialog.setTitle("Saved Configurations");
+        if (edit)
+            dialog.setHeaderText("Edit Name And Notices");
+        else
+            dialog.setHeaderText("Enter A Name And a Notice");
+
+        dialog.getDialogPane().getButtonTypes()
+                .addAll(
+                        ButtonType.APPLY,
+                        ButtonType.CANCEL
+                );
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField name = new TextField();
+        name.setPromptText("Name");
+        TextField notice = new TextField();
+        notice.setPromptText("Notice");
+        if (edit) {
+            name.setText(savedConfigModel.getSavedConfigName());
+            notice.setText(savedConfigModel.getSavedConfigNotices());
+        }
+
+        grid.add(new Label("Name: "), 0, 0);
+        grid.add(name, 1, 0);
+        grid.add(new Label("Notice: "), 0, 1);
+        grid.add(notice, 1, 1);
+
+        Node applyButton = dialog.getDialogPane().lookupButton(ButtonType.APPLY);
+        applyButton.setDisable(true);
+
+        name.textProperty().addListener((observable, oldValue, newValue) ->
+                applyButton.setDisable(newValue.trim().isEmpty()));
+
+        dialog.getDialogPane().setContent(grid);
+
+        Platform.runLater(name::requestFocus);
+
+        dialog.setResultConverter(param -> {
+            if (param == ButtonType.APPLY
+                    && !name.getText().trim().isEmpty()
+                    && !notice.getText().trim().isEmpty()) {
+                if (edit)
+                    return savedConfigModel.setSavedConfigName(name.getText().trim())
+                            .setSavedConfigNotices(name.getText().trim())
+                            .setSavedConfigDate(System.currentTimeMillis());
+                return new SavedConfigModel().setSavedConfigName(name.getText().trim())
+                        .setSavedConfigNotices(name.getText().trim())
+                        .setSavedConfigDate(System.currentTimeMillis());
+            }
+            return null;
+        });
+
+        Optional<SavedConfigModel> result = dialog.showAndWait();
+
+        result.ifPresent(savedConfigModel1 -> {
+            if (edit) {
+                savedConfigTable.getItems().remove(savedConfigModel);
+                SavedConfigModel.removeConfig(savedConfigModel);
+            }
+            SavedConfigModel.addConfig(savedConfigModel1);
+            savedConfigTable.getItems().add(savedConfigModel1);
+        });
+    }
+
 
     // ============================================================================================
     // EVENT METHODS
@@ -360,11 +480,11 @@ public class Controller {
 
         List<File> sources = Arrays.asList(
                 new File(
-                getPref(PROJECT_ROOT)
+                        getPref(PROJECT_ROOT)
 //                        + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
 //                        + getPref(MODULE_PACKAGE)
-                        + "app/build/intermediates/transforms/desugar/pack/release/0/"
-                        + getPref(MODULE_PACKAGE)),
+                                + "/app/build/intermediates/transforms/desugar/pack/release/0/"
+                                + getPref(MODULE_PACKAGE)),
                 new File(
                         getPref(PROJECT_ROOT)
 //                        + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
@@ -509,5 +629,62 @@ public class Controller {
 
         result.ifPresent(string ->
                 putPref(JDK_INSTALLATION_PATH, result.get()));
+    }
+
+    public void saveSavedConfig(ActionEvent event) {
+        // TODO Check Preferences
+        savedConfigInputDialog(null);
+    }
+
+    public void editSavedConfig(ActionEvent event) {
+        SavedConfigModel savedConfigModel = savedConfigTable.getSelectionModel().getSelectedItem();
+        if (savedConfigModel == null) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setContentText("Please select a Saved Configuration to edit it");
+            alert.show();
+            return;
+        }
+        savedConfigInputDialog(savedConfigModel);
+    }
+
+    public void restoreSavedConfig(ActionEvent event) {
+        SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
+        if (model == null) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setContentText("Please select a Configuration to restore it");
+            alert.show();
+            return;
+        }
+        if (model.getProjectRoot() == null || new File(model.getProjectRoot()).exists()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setContentText("Please select a Project Root");
+            alert.setOnCloseRequest(event1 -> {
+                alert.close();
+                DirectoryChooser chooser = new DirectoryChooser();
+                chooser.setTitle("Choose Project Root");
+                File selectedDirectory = chooser.showDialog(Main.getStage());
+                if (selectedDirectory != null) {
+                    model.setProjectRoot(selectedDirectory.getAbsolutePath());
+                } else {
+                    Alert alert1 = new Alert(Alert.AlertType.ERROR);
+                    alert1.setContentText("A Project Root Folder is required");
+                    return;
+                }
+            });
+            alert.show();
+        }
+        // TODO Load Preferences in
+    }
+
+    public void removeSavedConfig(ActionEvent event) {
+        SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
+        if (model == null) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setContentText("Please select a Configuration to delete it");
+            alert.show();
+            return;
+        }
+        savedConfigTable.getItems().remove(model);
+        SavedConfigModel.removeConfig(model);
     }
 }

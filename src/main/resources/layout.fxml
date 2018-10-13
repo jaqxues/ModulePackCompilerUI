@@ -140,11 +140,11 @@
                            <items>
                               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                                  <children>
-                                    <TableView prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <TableView fx:id="savedConfigTable" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                        <columns>
-                                          <TableColumn prefWidth="75.0" text="Name" />
-                                          <TableColumn prefWidth="75.0" text="Notices" />
-                                          <TableColumn editable="false" prefWidth="75.0" text="Date" />
+                                          <TableColumn fx:id="savedConfigNameCol" prefWidth="75.0" text="Name" />
+                                          <TableColumn fx:id="savedConfigNoticesCol" prefWidth="75.0" text="Notices" />
+                                          <TableColumn fx:id="savedConfigDateCol" editable="false" prefWidth="75.0" text="Date" />
                                        </columns>
                                        <columnResizePolicy>
                                           <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -156,9 +156,10 @@
                                  <children>
                                     <ButtonBar prefHeight="40.0" prefWidth="200.0">
                                        <buttons>
-                                          <Button mnemonicParsing="false" text="Save..." />
-                                          <Button mnemonicParsing="false" text="Edit..." />
-                                          <Button mnemonicParsing="false" text="Delete" />
+                                          <Button mnemonicParsing="false" onAction="#saveSavedConfig" text="Save..." />
+                                          <Button mnemonicParsing="false" onAction="#editSavedConfig" text="Edit..." />
+                                          <Button mnemonicParsing="false" onAction="#removeSavedConfig" text="Delete" />
+                                          <Button mnemonicParsing="false" onAction="#restoreSavedConfig" text="Restore" />
                                        </buttons>
                                     </ButtonBar>
                                  </children>
