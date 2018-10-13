@@ -63,8 +63,10 @@ public class SavedConfigModel {
         JsonParser jsonParser = new JsonParser();
         File file = new File(JSON_FILE);
         try {
-            if (!file.exists())
+            if (!file.exists()) {
                 file.createNewFile();
+                overwriteFile();
+            }
 
             FileReader reader = new FileReader(JSON_FILE);
             return jsonParser.parse(reader).getAsJsonObject();
@@ -72,14 +74,18 @@ public class SavedConfigModel {
             LogUtils.getLogger().error("Could not parse SavedConfig json", e);
         } catch (JsonParseException e) {
             LogUtils.getLogger().error("SavedConfig Json Corrupted, unable to parse file", e);
-            try (FileWriter writer = new FileWriter(JSON_FILE)) {
-                writer.write("{}");
-                writer.flush();
-            } catch (IOException e2) {
-                LogUtils.getLogger().error("Unable to over-write corrupted Json File", e2);
-            }
+            overwriteFile();
         }
         return new JsonObject();
+    }
+
+    private static void overwriteFile() {
+        try (FileWriter writer = new FileWriter(JSON_FILE)) {
+            writer.write("{}");
+            writer.flush();
+        } catch (IOException e2) {
+            LogUtils.getLogger().error("Unable to over-write corrupted Json File", e2);
+        }
     }
 
     public String getSavedConfigName() {

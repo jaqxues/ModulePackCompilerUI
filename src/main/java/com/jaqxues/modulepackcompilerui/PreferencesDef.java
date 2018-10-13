@@ -16,7 +16,8 @@ import javafx.scene.control.TableCell;
 public enum PreferencesDef {
     PROJECT_ROOT("ProjectRoot", String.class, "."),
     MODULE_PACKAGE("ModulePackage", String.class, null),
-    ATTRIBUTES("Attributes", List.class, new ArrayList<String>()),
+    FILE_SOURCES("FileSources", ArrayList.class, null),
+    ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
     SIGN_PACK("SignPack", Boolean.class, true),
     SIGN_CONFIGS("SingConfigs", new TypeToken<List<SignConfig>>() {}.getType(), new ArrayList<SignConfig>()),
     SELECTED_SIGN_CONFIG("SelectedSignConfig", SignConfig.class, null),

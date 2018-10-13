@@ -5,7 +5,6 @@ import com.sun.istack.internal.Nullable;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -17,7 +16,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -37,6 +35,7 @@ import static com.jaqxues.modulepackcompilerui.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.removeFromCollection;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.togglePref;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.ATTRIBUTES;
+import static com.jaqxues.modulepackcompilerui.PreferencesDef.FILE_SOURCES;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.PROJECT_ROOT;
@@ -155,8 +154,8 @@ public class Controller {
         );
     }
 
-    private void attrInputDialog(@Nullable String originalName, @Nullable String originalValue) {
-        boolean edit = originalName != null && originalValue != null;
+    private void attrInputDialog(@Nullable String string) {
+        boolean edit = string != null;
         Dialog<String> dialog = new Dialog<>();
         if (edit) {
             dialog.setTitle("Edit Attribute");
@@ -181,20 +180,14 @@ public class Controller {
         TextField value = new TextField();
         value.setPromptText("Value");
         if (edit) {
-            name.setText(originalName);
-            value.setText(originalValue);
+            name.setText(string.split("=", 2)[0]);
+            value.setText(string.split("=", 2)[1]);
         }
 
         grid.add(new Label("Name: "), 0, 0);
         grid.add(name, 1, 0);
         grid.add(new Label("Value: "), 0, 1);
         grid.add(value, 1, 1);
-
-        Node applyButton = dialog.getDialogPane().lookupButton(ButtonType.APPLY);
-        applyButton.setDisable(true);
-
-        name.textProperty().addListener((observable, oldValue, newValue) ->
-                applyButton.setDisable(newValue.trim().isEmpty()));
 
         dialog.getDialogPane().setContent(grid);
 
@@ -211,9 +204,13 @@ public class Controller {
 
         Optional<String> result = dialog.showAndWait();
 
-        result.ifPresent(strings -> {
-            PreferenceManager.addToCollection(ATTRIBUTES, strings);
-            attrTable.getItems().add(strings);
+        result.ifPresent(string1 -> {
+            if (edit) {
+                attrTable.getItems().remove(string);
+                removeFromCollection(ATTRIBUTES, string);
+            }
+            PreferenceManager.addToCollection(ATTRIBUTES, string1);
+            attrTable.getItems().add(string1);
         });
     }
 
@@ -295,6 +292,10 @@ public class Controller {
         Optional<SignConfig> result = dialog.showAndWait();
 
         result.ifPresent(signConfig -> {
+            if (edit) {
+                keyTable.getItems().remove(oldConfig);
+                removeFromCollection(SIGN_CONFIGS, oldConfig);
+            }
             PreferenceManager.addToCollection(SIGN_CONFIGS, signConfig);
             keyTable.getItems().add(signConfig);
         });
@@ -346,12 +347,6 @@ public class Controller {
         grid.add(name, 1, 0);
         grid.add(new Label("Notice: "), 0, 1);
         grid.add(notice, 1, 1);
-
-        Node applyButton = dialog.getDialogPane().lookupButton(ButtonType.APPLY);
-        applyButton.setDisable(true);
-
-        name.textProperty().addListener((observable, oldValue, newValue) ->
-                applyButton.setDisable(newValue.trim().isEmpty()));
 
         dialog.getDialogPane().setContent(grid);
 
@@ -406,7 +401,7 @@ public class Controller {
     }
 
     public void addAttribute(ActionEvent event) {
-        attrInputDialog(null, null);
+        attrInputDialog(null);
     }
 
     public void editAttribute(ActionEvent event) {
@@ -417,10 +412,8 @@ public class Controller {
             alert.show();
             return;
         }
-        attrTable.getItems().remove(attribute);
-        removeFromCollection(ATTRIBUTES, attribute);
 
-        attrInputDialog(attribute.split("=", 2)[0], attribute.split("=", 2)[1]);
+        attrInputDialog(attribute);
     }
 
     public void removeAttribute(ActionEvent event) {
@@ -452,8 +445,6 @@ public class Controller {
             return;
         }
 
-        keyTable.getItems().remove(selected);
-        removeFromCollection(SIGN_CONFIGS, selected);
         keyInputDialog(selected);
     }
 
@@ -492,8 +483,6 @@ public class Controller {
                                 + "/app/build/tmp/kotlin-classes/packRelease/"
                                 + getPref(MODULE_PACKAGE))
         );
-
-        List<String> attributes = new ArrayList<>();
 
         try {
             PackCompiler packCompiler = new PackCompiler.Builder()
@@ -655,7 +644,7 @@ public class Controller {
             alert.show();
             return;
         }
-        if (model.getProjectRoot() == null || new File(model.getProjectRoot()).exists()) {
+        if (model.getProjectRoot() == null || !new File(model.getProjectRoot()).exists()) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Please select a Project Root");
             alert.setOnCloseRequest(event1 -> {
@@ -668,12 +657,32 @@ public class Controller {
                 } else {
                     Alert alert1 = new Alert(Alert.AlertType.ERROR);
                     alert1.setContentText("A Project Root Folder is required");
-                    return;
                 }
             });
             alert.show();
         }
-        // TODO Load Preferences in
+        //noinspection unchecked
+        for (String string : (List<String>) getPref(ATTRIBUTES))
+            attrTable.getItems().remove(string);
+        for (String string : putPref(ATTRIBUTES, model.getAttributes()))
+            attrTable.getItems().add(string);
+
+        putPref(PROJECT_ROOT, model.getProjectRoot());
+        putPref(MODULE_PACKAGE, model.getModulePackage());
+
+        toggleSignPack.setSelected(
+                putPref(SIGN_PACK, model.getSignConfig() != null)
+        );
+
+        if (model.getSignConfig() != null) {
+            if (!keyTable.getItems().contains(model.getSignConfig()))
+                keyTable.getItems().add(model.getSignConfig());
+            putPref(SELECTED_SIGN_CONFIG, model.getSignConfig());
+            keyTable.getSelectionModel().select(model.getSignConfig());
+        } else
+            putPref(SELECTED_SIGN_CONFIG, null);
+
+        putPref(FILE_SOURCES, model.getModuleSources());
     }
 
     public void removeSavedConfig(ActionEvent event) {

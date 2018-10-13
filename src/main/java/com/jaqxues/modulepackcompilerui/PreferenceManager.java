@@ -74,7 +74,6 @@ public class PreferenceManager {
         return (T) preferences.get(pref.getKey());
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public static <T> T putPref(PreferencesDef pref, T value) {
         preferences.put(pref.getKey(), value);
         saveMap();
