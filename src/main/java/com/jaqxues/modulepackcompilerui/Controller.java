@@ -152,6 +152,7 @@ public class Controller {
                                 "/app/build/tmp/kotlin-classes/packRelease/"
                         ))
         );
+        savedConfigTable.getItems().addAll(SavedConfigModel.getConfigs());
     }
 
     private void attrInputDialog(@Nullable String string) {
@@ -362,7 +363,12 @@ public class Controller {
                             .setSavedConfigDate(System.currentTimeMillis());
                 return new SavedConfigModel().setSavedConfigName(name.getText().trim())
                         .setSavedConfigNotices(name.getText().trim())
-                        .setSavedConfigDate(System.currentTimeMillis());
+                        .setSavedConfigDate(System.currentTimeMillis())
+                        .setProjectRoot(getPref(PROJECT_ROOT))
+                        .setModulePackage(getPref(MODULE_PACKAGE))
+                        .setModuleSources(getPref(FILE_SOURCES))
+                        .setAttributes(attrTable.getItems())
+                        .setSignConfig(getPref(SELECTED_SIGN_CONFIG));
             }
             return null;
         });

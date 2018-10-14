@@ -11,6 +11,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -40,7 +41,7 @@ public class SavedConfigModel {
 
     public static void addConfig(SavedConfigModel model) {
         JsonObject object = getConfigJson();
-        object.addProperty(model.getSavedConfigName(), GsonSingleton.getSingleton().toJson(model));
+        object.add(model.getSavedConfigName(), GsonSingleton.getSingleton().toJsonTree(model));
         saveJson(object);
     }
 
@@ -48,6 +49,18 @@ public class SavedConfigModel {
         JsonObject object = getConfigJson();
         object.remove(model.getSavedConfigName());
         saveJson(object);
+    }
+
+    public static SavedConfigModel[] getConfigs() {
+        JsonObject object = getConfigJson();
+        Set<String> keySet = object.keySet();
+        SavedConfigModel[] array = new SavedConfigModel[keySet.size()];
+        int i = 0;
+        for (String key : keySet) {
+            array[i] = GsonSingleton.getSingleton().fromJson(object.getAsJsonObject(key), SavedConfigModel.class);
+            i++;
+        }
+        return array;
     }
 
     private static void saveJson(JsonElement element) {
@@ -72,7 +85,7 @@ public class SavedConfigModel {
             return jsonParser.parse(reader).getAsJsonObject();
         } catch (IOException e) {
             LogUtils.getLogger().error("Could not parse SavedConfig json", e);
-        } catch (JsonParseException e) {
+        } catch (JsonParseException | IllegalStateException e) {
             LogUtils.getLogger().error("SavedConfig Json Corrupted, unable to parse file", e);
             overwriteFile();
         }
