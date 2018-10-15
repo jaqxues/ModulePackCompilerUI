@@ -160,6 +160,7 @@
                                           <Button mnemonicParsing="false" onAction="#editSavedConfig" text="Edit..." />
                                           <Button mnemonicParsing="false" onAction="#removeSavedConfig" text="Delete" />
                                           <Button mnemonicParsing="false" onAction="#restoreSavedConfig" text="Restore" />
+                                          <Button mnemonicParsing="false" onAction="#resetCurrentPrefs" text="Reset..." />
                                        </buttons>
                                     </ButtonBar>
                                  </children>

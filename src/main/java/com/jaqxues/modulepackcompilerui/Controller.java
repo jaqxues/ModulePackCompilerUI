@@ -26,6 +26,7 @@ import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -135,7 +136,7 @@ public class Controller {
         });
         savedConfigTable.getItems().add(
                 new SavedConfigModel()
-                        .setModulePackage("com.ljmu.andre.snaptools")
+                        .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
                         .setSavedConfigDate(System.currentTimeMillis())
                         .setSavedConfigName("Default SnapTools Configuration")
                         .setAttributes(Arrays.asList(
@@ -391,7 +392,15 @@ public class Controller {
     // ============================================================================================
 
     public void setModulePackage(ActionEvent event) {
-
+        TextInputDialog inputDialog = new TextInputDialog();
+        inputDialog.setTitle("General Settings");
+        inputDialog.setHeaderText("Set Module Package");
+        inputDialog.setContentText("The Module Package Name is used to determine which files and code will be included in the Pack.\nAll Files in this Java Package will be included (and SubFiles of course).\n\nSnapTools uses for example \"com.ljmu.andre.snaptools.ModulePack\"\n\nIn case this PackageName is wrong, your pack will either not be compiled or won't work at all.");
+        inputDialog.getEditor().setPromptText("com.ljmu.andre.snaptools.ModulePack");
+        inputDialog.getEditor().setText(getPref(MODULE_PACKAGE));
+        inputDialog.showAndWait().ifPresent(
+                s -> putPref(MODULE_PACKAGE, s)
+        );
     }
 
     public void setProjectRoot(ActionEvent event) {
@@ -701,5 +710,9 @@ public class Controller {
         }
         savedConfigTable.getItems().remove(model);
         SavedConfigModel.removeConfig(model);
+    }
+
+    public void resetCurrentPrefs(ActionEvent event) {
+
     }
 }
