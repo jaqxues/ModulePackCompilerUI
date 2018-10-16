@@ -34,7 +34,7 @@
                         <Button mnemonicParsing="false" onAction="#setProjectRoot" text="Set Project Root" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0" />
                         <Button layoutY="35.0" mnemonicParsing="false" onAction="#setModulePackage" text="Set Module Package" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="40.0" />
                         <Separator layoutX="143.0" layoutY="34.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="115.0" />
-                        <Button layoutX="223.0" layoutY="45.0" mnemonicParsing="false" text="Manual Project Sources" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="70.0" />
+                        <Button layoutX="223.0" layoutY="45.0" mnemonicParsing="false" onAction="#setSources" text="Manual Project Sources" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="70.0" />
                         <CheckBox fx:id="toggleSignPack" layoutX="25.0" layoutY="91.0" mnemonicParsing="false" onAction="#toggleSignPack" text="Sign Packs" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="140.0" />
                         <Separator layoutX="97.0" layoutY="165.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="185.0" />
                         <Button layoutX="162.0" layoutY="230.0" mnemonicParsing="false" onAction="#setJDKInstallation" text="JDK Installation Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="210.0" />

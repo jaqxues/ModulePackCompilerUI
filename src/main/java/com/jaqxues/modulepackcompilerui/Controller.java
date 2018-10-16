@@ -103,6 +103,8 @@ public class Controller {
     private void initSigning() {
         toggleSignPack.setSelected(getPref(SIGN_PACK));
 
+        keyTable.setDisable(!(boolean) getPref(SIGN_PACK));
+
         storePathCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().getStorePath())
         );
@@ -134,26 +136,31 @@ public class Controller {
             SimpleDateFormat dateFormat = (SimpleDateFormat) DateFormat.getDateTimeInstance();
             return new SimpleStringProperty(dateFormat.format(new Date(param.getValue().getSavedConfigDate())));
         });
-        savedConfigTable.getItems().add(
-                new SavedConfigModel()
-                        .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
-                        .setSavedConfigDate(System.currentTimeMillis())
-                        .setSavedConfigName("Default SnapTools Configuration")
-                        .setAttributes(Arrays.asList(
-                                "Development=TRUE",
-                                "PackVersion=1.0.0.0",
-                                "Flavour=prod",
-                                "Type=Premium",
-                                "SCVersion=10.41.6.0"
-                        ))
-                        .setSavedConfigDate(System.currentTimeMillis())
-                        .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
-                        .setModuleSources(Arrays.asList(
-                                "/app/build/intermediates/transforms/desugar/pack/release/0/",
-                                "/app/build/tmp/kotlin-classes/packRelease/"
-                        ))
+
+        if (SavedConfigModel.getConfigs().length == 0)
+            SavedConfigModel.addConfig(
+                    new SavedConfigModel()
+                            .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
+                            .setSavedConfigDate(System.currentTimeMillis())
+                            .setSavedConfigName("Default SnapTools Configuration")
+                            .setAttributes(Arrays.asList(
+                                    "Development=TRUE",
+                                    "PackVersion=1.0.0.0",
+                                    "Flavour=prod",
+                                    "Type=Premium",
+                                    "SCVersion=10.41.6.0"
+                            ))
+                            .setSavedConfigDate(System.currentTimeMillis())
+                            .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
+                            .setModuleSources(Arrays.asList(
+                                    "/app/build/intermediates/transforms/desugar/pack/release/0/",
+                                    "/app/build/tmp/kotlin-classes/packRelease/"
+                            ))
+            );
+
+        savedConfigTable.getItems().addAll(
+                SavedConfigModel.getConfigs()
         );
-        savedConfigTable.getItems().addAll(SavedConfigModel.getConfigs());
     }
 
     private void attrInputDialog(@Nullable String string) {
@@ -304,7 +311,7 @@ public class Controller {
     }
 
     private String checkPreferences() {
-        if (getPref(PROJECT_ROOT).equals("."))
+        if (getPref(PROJECT_ROOT) == null)
             return "Select a Project Root";
         if (getPref(MODULE_PACKAGE) == null)
             return "Select a Package to build to Module Pack from";
@@ -415,6 +422,11 @@ public class Controller {
         alert.show();
     }
 
+    public void setSources(ActionEvent event) {
+        Dialog<List<File>> dialog = new Dialog<>();
+        // TODO FINISH
+    }
+
     public void addAttribute(ActionEvent event) {
         attrInputDialog(null);
     }
@@ -444,7 +456,9 @@ public class Controller {
     }
 
     public void toggleSignPack(ActionEvent event) {
-        togglePref(SIGN_PACK);
+        keyTable.setDisable(
+                !togglePref(SIGN_PACK)
+        );
     }
 
     public void addKeyConfig(ActionEvent event) {
@@ -659,6 +673,7 @@ public class Controller {
             alert.show();
             return;
         }
+
         if (model.getProjectRoot() == null || !new File(model.getProjectRoot()).exists()) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Please select a Project Root");
@@ -669,6 +684,7 @@ public class Controller {
                 File selectedDirectory = chooser.showDialog(Main.getStage());
                 if (selectedDirectory != null) {
                     model.setProjectRoot(selectedDirectory.getAbsolutePath());
+                    putPref(PROJECT_ROOT, selectedDirectory.getAbsolutePath());
                 } else {
                     Alert alert1 = new Alert(Alert.AlertType.ERROR);
                     alert1.setContentText("A Project Root Folder is required");

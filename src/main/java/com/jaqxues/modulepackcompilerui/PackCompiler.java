@@ -20,7 +20,6 @@ import java.util.List;
 import javafx.concurrent.Task;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.PreferenceManager.togglePref;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
@@ -250,7 +249,7 @@ public class PackCompiler extends Task<File> {
             if (jarTarget == null) {
                 throw new IllegalArgumentException("No Jar Target Provided");
             }
-            return new PackCompiler((File[]) sources.toArray(), (String[]) attributes.toArray(), jarTarget, signConfig);
+            return new PackCompiler((File[]) sources.toArray(), attributes.toArray(new String[0]), jarTarget, signConfig);
         }
     }
 }

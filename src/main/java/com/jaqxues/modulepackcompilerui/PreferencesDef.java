@@ -14,7 +14,7 @@ import javafx.scene.control.TableCell;
  */
 
 public enum PreferencesDef {
-    PROJECT_ROOT("ProjectRoot", String.class, "."),
+    PROJECT_ROOT("ProjectRoot", String.class, null),
     MODULE_PACKAGE("ModulePackage", String.class, null),
     FILE_SOURCES("FileSources", ArrayList.class, null),
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
