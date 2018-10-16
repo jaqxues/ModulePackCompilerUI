@@ -1,5 +1,7 @@
 package com.jaqxues.modulepackcompilerui;
 
+import java.lang.ref.WeakReference;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -7,14 +9,14 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-    private static Stage stage;
+    private static WeakReference<Stage> stage;
 
     public static void main(String[] args) {
         launch(args);
     }
 
     public static Stage getStage() {
-        return stage;
+        return stage.get();
     }
 
     @Override
@@ -26,6 +28,6 @@ public class Main extends Application {
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
 
-        stage = primaryStage;
+        stage = new WeakReference<>(primaryStage);
     }
 }

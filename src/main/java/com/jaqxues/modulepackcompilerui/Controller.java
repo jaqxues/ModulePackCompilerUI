@@ -504,19 +504,19 @@ public class Controller {
 //                        + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
 //                        + getPref(MODULE_PACKAGE)
                                 + "/app/build/intermediates/transforms/desugar/pack/release/0/"
-                                + getPref(MODULE_PACKAGE)),
+                                + ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/")),
                 new File(
                         getPref(PROJECT_ROOT)
 //                        + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
 //                        + getPref(MODULE_PACKAGE)
                                 + "/app/build/tmp/kotlin-classes/packRelease/"
-                                + getPref(MODULE_PACKAGE))
+                                + ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/"))
         );
 
         try {
             PackCompiler packCompiler = new PackCompiler.Builder()
                     .setAttributes(attrTable.getItems())
-                    .setJarTarget(new File(""))
+                    .setJarTarget(new File("TARGET"))
                     .setSignConfig(keyTable.getSelectionModel().getSelectedItem())
                     .setSources(sources)
                     .build();

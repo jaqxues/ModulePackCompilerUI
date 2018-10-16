@@ -32,9 +32,9 @@ public class SavedConfigModel {
     public SignConfig signConfig;
     @SerializedName("ProjectRoot")
     public String projectRoot;
-    @SerializedName("Module Package")
+    @SerializedName("ModulePackage")
     public String modulePackage;
-    @SerializedName("Module Sources")
+    @SerializedName("ModuleSources")
     public List<String> moduleSources;
     @SerializedName("Attributes")
     public List<String> attributes;

@@ -79,7 +79,7 @@ public class PackCompiler extends Task<File> {
 
         }
 
-        File targetFile = new File(dest, getPref(MODULE_PACKAGE));
+        File targetFile = new File(dest, getMPFolder());
         targetFile.mkdirs();
 
         for (File source : sources) {
@@ -150,7 +150,7 @@ public class PackCompiler extends Task<File> {
 
         File manifest = createManifestFile();
 
-        jarTarget.getParentFile().mkdirs();
+        jarTarget.mkdirs();
 
         String[] commands = getCommands(manifest);
         try {
@@ -160,14 +160,15 @@ public class PackCompiler extends Task<File> {
             throw new NotCompiledException("Error while executing commands in CMD", e);
         }
 
-        signOutput();
+        if (signConfig != null)
+            signOutput();
 
         adbPush(jarTarget, "/sdcard/SnapTools/ModulePacks/");
     }
 
     private String[] getCommands(File manifest) {
         return new String[]{
-                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + getPref(MODULE_PACKAGE),
+                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + getMPFolder(),
                 getPref(SDK_BUILD_TOOLS) + "\\dx.bat --dex --output=" + jarTarget.getAbsolutePath() + "_unsigned.jar " + compiledPath.getAbsolutePath(),
                 getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
         };
@@ -189,6 +190,14 @@ public class PackCompiler extends Task<File> {
         writer.flush();
         writer.close();
         return manifest;
+    }
+
+    /**
+     * Used instead of having duplicates throughout the project.
+     * @return
+     */
+    private static String getMPFolder() {
+        return ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/");
     }
 
     @Override
