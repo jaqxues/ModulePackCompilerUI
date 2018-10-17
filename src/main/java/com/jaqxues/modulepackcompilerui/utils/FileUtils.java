@@ -1,4 +1,4 @@
-package com.jaqxues.modulepackcompilerui;
+package com.jaqxues.modulepackcompilerui.utils;
 
 import java.io.File;
 import java.io.IOException;

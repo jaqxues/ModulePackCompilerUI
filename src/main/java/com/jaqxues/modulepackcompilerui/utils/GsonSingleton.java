@@ -1,4 +1,4 @@
-package com.jaqxues.modulepackcompilerui;
+package com.jaqxues.modulepackcompilerui.utils;
 
 import com.google.gson.Gson;
 

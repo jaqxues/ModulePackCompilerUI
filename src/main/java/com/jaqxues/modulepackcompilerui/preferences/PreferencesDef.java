@@ -1,12 +1,11 @@
-package com.jaqxues.modulepackcompilerui;
+package com.jaqxues.modulepackcompilerui.preferences;
 
 import com.google.gson.reflect.TypeToken;
+import com.jaqxues.modulepackcompilerui.models.SignConfig;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-
-import javafx.scene.control.TableCell;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>

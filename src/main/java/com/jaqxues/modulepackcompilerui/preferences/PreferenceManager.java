@@ -1,9 +1,11 @@
-package com.jaqxues.modulepackcompilerui;
+package com.jaqxues.modulepackcompilerui.preferences;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.jaqxues.modulepackcompilerui.utils.GsonSingleton;
+import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;

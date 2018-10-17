@@ -1,4 +1,4 @@
-package com.jaqxues.modulepackcompilerui;
+package com.jaqxues.modulepackcompilerui.models;
 
 import com.google.gson.annotations.SerializedName;
 

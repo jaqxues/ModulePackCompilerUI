@@ -1,5 +1,6 @@
-package com.jaqxues.modulepackcompilerui;
+package com.jaqxues.modulepackcompilerui.utils;
 
+import com.jaqxues.modulepackcompilerui.models.SignConfig;
 import com.jaqxues.modulepackcompilerui.exceptions.CMDException;
 import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
 import com.sun.istack.internal.NotNull;
@@ -19,12 +20,12 @@ import java.util.List;
 
 import javafx.concurrent.Task;
 
-import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_PATH;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_TOGGLE;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -204,7 +205,7 @@ public class PackCompiler extends Task<File> {
     }
 
     @Override
-    protected File call() throws Exception {
+    public File call() throws Exception {
         init(); // TODO Elegance
         return null;
     }

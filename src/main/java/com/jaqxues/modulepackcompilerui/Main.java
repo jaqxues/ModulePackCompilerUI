@@ -1,7 +1,7 @@
 package com.jaqxues.modulepackcompilerui;
 
-import java.io.FileInputStream;
-import java.io.FileReader;
+import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
+
 import java.lang.ref.WeakReference;
 
 import javafx.application.Application;

@@ -1,5 +1,11 @@
 package com.jaqxues.modulepackcompilerui;
 
+import com.jaqxues.modulepackcompilerui.models.SavedConfigModel;
+import com.jaqxues.modulepackcompilerui.models.SignConfig;
+import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
+import com.jaqxues.modulepackcompilerui.preferences.PreferencesDef;
+import com.jaqxues.modulepackcompilerui.utils.LogUtils;
+import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
 import com.sun.istack.internal.Nullable;
 
 import java.io.File;
@@ -31,21 +37,21 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
-import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.PreferenceManager.putPref;
-import static com.jaqxues.modulepackcompilerui.PreferenceManager.removeFromCollection;
-import static com.jaqxues.modulepackcompilerui.PreferenceManager.togglePref;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_PATH;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_TOGGLE;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.ATTRIBUTES;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.FILE_SOURCES;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.PROJECT_ROOT;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.SELECTED_SIGN_CONFIG;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_CONFIGS;
-import static com.jaqxues.modulepackcompilerui.PreferencesDef.SIGN_PACK;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.putPref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromCollection;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.togglePref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ATTRIBUTES;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.FILE_SOURCES;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SELECTED_SIGN_CONFIG;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_CONFIGS;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_PACK;
 
 public class Controller {
 
