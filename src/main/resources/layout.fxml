@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jaqxues.modulepackcompilerui.Controller">
+<GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jaqxues.modulepackcompilerui.Controller">
   <columnConstraints>
     <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
     <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -36,12 +36,14 @@
                         <Separator layoutX="143.0" layoutY="34.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="115.0" />
                         <Button layoutX="223.0" layoutY="45.0" mnemonicParsing="false" onAction="#setSources" text="Manual Project Sources" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="70.0" />
                         <CheckBox fx:id="toggleSignPack" layoutX="25.0" layoutY="91.0" mnemonicParsing="false" onAction="#toggleSignPack" text="Sign Packs" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="140.0" />
-                        <Separator layoutX="97.0" layoutY="165.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="185.0" />
-                        <Button layoutX="162.0" layoutY="230.0" mnemonicParsing="false" onAction="#setJDKInstallation" text="JDK Installation Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="210.0" />
-                        <Button mnemonicParsing="false" onAction="#setSDKBuildTools" text="SDK Build Tools Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="240.0" />
-                        <Separator prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="280.0" />
+                        <Separator layoutX="97.0" layoutY="165.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="225.0" />
+                        <Button layoutX="162.0" layoutY="230.0" mnemonicParsing="false" onAction="#setJDKInstallation" text="JDK Installation Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="245.0" />
+                        <Button mnemonicParsing="false" onAction="#setSDKBuildTools" text="SDK Build Tools Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="280.0" />
+                        <Separator prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="315.0" />
                         <ProgressBar fx:id="progressBar" layoutX="99.0" layoutY="302.0" prefWidth="200.0" progress="0.0" visible="false" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
-                        <Button mnemonicParsing="false" onAction="#compileModPack" text="Compile Module Pack" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+                        <Button mnemonicParsing="false" onAction="#compileModPack" text="Compile Module Pack" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
+                        <CheckBox fx:id="adbPushToggle" layoutX="22.0" layoutY="191.0" mnemonicParsing="false" onAction="#adbPushToggle" text="Adb Push" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="190.0" />
+                        <Button fx:id="adbPushSettings" layoutX="173.0" layoutY="187.0" mnemonicParsing="false" onAction="#adbPushSettings" text="Adb Push Settings" AnchorPane.leftAnchor="160.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="190.0" />
                      </children>
                   </AnchorPane>
                </content>

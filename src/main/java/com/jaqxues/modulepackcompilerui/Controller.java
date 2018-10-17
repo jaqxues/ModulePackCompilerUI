@@ -35,6 +35,8 @@ import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.removeFromCollection;
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.togglePref;
+import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_PATH;
+import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.ATTRIBUTES;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.FILE_SOURCES;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
@@ -79,14 +81,20 @@ public class Controller {
     @FXML
     private ProgressBar progressBar;
 
+    @FXML
+    private CheckBox adbPushToggle;
+    @FXML
+    private Button adbPushSettings;
+
     // ============================================================================================
-    // INIT METHODS
+    // INITIALIZATION METHODS
     // ============================================================================================
 
     public void initialize() {
         initAttributes();
         initSigning();
         initSavedConfig();
+        initAdbPush();
     }
 
     private void initAttributes() {
@@ -161,6 +169,13 @@ public class Controller {
         savedConfigTable.getItems().addAll(
                 SavedConfigModel.getConfigs()
         );
+    }
+
+    private void initAdbPush() {
+        boolean adbPush = getPref(ADB_PUSH_TOGGLE);
+        adbPushToggle.setSelected(adbPush);
+        adbPushSettings.setDisable(!adbPush);
+
     }
 
     private void attrInputDialog(@Nullable String string) {
@@ -730,5 +745,22 @@ public class Controller {
 
     public void resetCurrentPrefs(ActionEvent event) {
 
+    }
+
+    public void adbPushSettings(ActionEvent event) {
+        TextInputDialog inputDialog = new TextInputDialog();
+        inputDialog.setTitle("ADB Push Path");
+        inputDialog.setHeaderText("Set ADB Push Path for your phone");
+        if (getPref(ADB_PUSH_PATH) != null)
+            inputDialog.getEditor().setText(getPref(ADB_PUSH_PATH));
+        inputDialog.getEditor().setPromptText("ADB Push Path");
+        inputDialog.setContentText("The Adb Push Path defines where the Packs are pushed to on your phone.\nUsually /sdcard/SnapTools/ModulePacks/");
+        inputDialog.showAndWait().ifPresent(s -> putPref(ADB_PUSH_PATH, s));
+    }
+
+    public void adbPushToggle(ActionEvent event) {
+        adbPushSettings.setDisable(
+                !togglePref(ADB_PUSH_TOGGLE)
+        );
     }
 }

@@ -20,6 +20,8 @@ import java.util.List;
 import javafx.concurrent.Task;
 
 import static com.jaqxues.modulepackcompilerui.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_PATH;
+import static com.jaqxues.modulepackcompilerui.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.PreferencesDef.SDK_BUILD_TOOLS;
@@ -125,8 +127,9 @@ public class PackCompiler extends Task<File> {
             throw new CMDException("Could not execute Signing");
     }
 
-    private static void adbPush(File file, String pushPath) throws Exception {
-        cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + pushPath);
+    private static void adbPush(File file) throws Exception {
+        if (getPref(ADB_PUSH_TOGGLE))
+            cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + getPref(ADB_PUSH_PATH) + file.getName() + ".jar");
     }
 
     public void init() throws Exception {
@@ -163,7 +166,7 @@ public class PackCompiler extends Task<File> {
         if (signConfig != null)
             signOutput();
 
-        adbPush(jarTarget, "/sdcard/SnapTools/ModulePacks/");
+        adbPush(jarTarget);
     }
 
     private String[] getCommands(File manifest) {

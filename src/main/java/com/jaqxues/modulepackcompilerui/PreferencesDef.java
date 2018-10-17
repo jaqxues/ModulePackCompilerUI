@@ -17,6 +17,8 @@ public enum PreferencesDef {
     PROJECT_ROOT("ProjectRoot", String.class, null),
     MODULE_PACKAGE("ModulePackage", String.class, null),
     FILE_SOURCES("FileSources", ArrayList.class, null),
+    ADB_PUSH_TOGGLE("AdbPushToggle", Boolean.class, false),
+    ADB_PUSH_PATH("AdbPushPath", String.class, null),
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
     SIGN_PACK("SignPack", Boolean.class, true),
     SIGN_CONFIGS("SingConfigs", new TypeToken<List<SignConfig>>() {}.getType(), new ArrayList<SignConfig>()),
