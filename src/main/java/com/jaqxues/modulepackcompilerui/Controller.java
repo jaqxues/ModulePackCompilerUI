@@ -393,6 +393,11 @@ public class Controller {
                         .setAttributes(attrTable.getItems())
                         .setSignConfig(getPref(SELECTED_SIGN_CONFIG));
             }
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Empty Values");
+            alert.setHeaderText("Empty Values");
+            alert.setContentText("You cannot provide empty values to save a Configuration");
+            alert.show();
             return null;
         });
 
@@ -403,8 +408,14 @@ public class Controller {
                 savedConfigTable.getItems().remove(savedConfigModel);
                 SavedConfigModel.removeConfig(savedConfigModel);
             }
-            SavedConfigModel.addConfig(savedConfigModel1);
-            savedConfigTable.getItems().add(savedConfigModel1);
+            if (!SavedConfigModel.addConfig(savedConfigModel1)) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setHeaderText("Duplicate Detected");
+                alert.setTitle("Unable to save Configuration");
+                alert.setContentText("A Saved Configuration with the same Name already exists, please chose a new name.");
+                alert.show();
+            } else
+                savedConfigTable.getItems().add(savedConfigModel1);
         });
     }
 
@@ -665,7 +676,6 @@ public class Controller {
     }
 
     public void saveSavedConfig(ActionEvent event) {
-        // TODO Check Preferences
         savedConfigInputDialog(null);
     }
 

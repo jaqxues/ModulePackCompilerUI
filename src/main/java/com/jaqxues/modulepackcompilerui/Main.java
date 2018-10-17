@@ -1,11 +1,14 @@
 package com.jaqxues.modulepackcompilerui;
 
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.lang.ref.WeakReference;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class Main extends Application {
@@ -25,6 +28,11 @@ public class Main extends Application {
 
         Parent root = FXMLLoader.load(getClass().getResource("/layout.fxml"));
         primaryStage.setTitle("ModulePack Compiler UI");
+        primaryStage.getIcons().addAll(
+                new Image("images/module_yellow_50.png"),
+                new Image("images/module_yellow_100.png"),
+                new Image("images/module_yellow_500.png")
+        );
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
 

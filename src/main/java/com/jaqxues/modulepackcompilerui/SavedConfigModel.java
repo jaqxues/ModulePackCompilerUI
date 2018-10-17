@@ -1,7 +1,7 @@
 package com.jaqxues.modulepackcompilerui;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
@@ -10,8 +10,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -39,26 +39,41 @@ public class SavedConfigModel {
     @SerializedName("Attributes")
     public List<String> attributes;
 
-    public static void addConfig(SavedConfigModel model) {
-        JsonObject object = getConfigJson();
-        object.add(model.getSavedConfigName(), GsonSingleton.getSingleton().toJsonTree(model));
+
+    /**
+     *
+     * @param model
+     * @return True if the SignConfig has been added to the Saved Configs, False if the name already existed
+     */
+    public static boolean addConfig(SavedConfigModel model) {
+        JsonArray object = getConfigJson();
+        for (JsonElement element : object) {
+            if (element.getAsJsonObject().get("SavedConfigName").getAsString().equals(model.getSavedConfigName()))
+                return false;
+        }
+        object.add(GsonSingleton.getSingleton().toJsonTree(model));
         saveJson(object);
+        return true;
     }
 
     public static void removeConfig(SavedConfigModel model) {
-        JsonObject object = getConfigJson();
-        object.remove(model.getSavedConfigName());
+        JsonArray object = getConfigJson();
+        Iterator<JsonElement> iterator = object.iterator();
+        while (iterator.hasNext()) {
+            JsonElement element = iterator.next();
+            if (element.getAsJsonObject().get("SavedConfigName").getAsString().equals(model.getSavedConfigName())) {
+                iterator.remove();
+                return;
+            }
+        }
         saveJson(object);
     }
 
     public static SavedConfigModel[] getConfigs() {
-        JsonObject object = getConfigJson();
-        Set<String> keySet = object.keySet();
-        SavedConfigModel[] array = new SavedConfigModel[keySet.size()];
-        int i = 0;
-        for (String key : keySet) {
-            array[i] = GsonSingleton.getSingleton().fromJson(object.getAsJsonObject(key), SavedConfigModel.class);
-            i++;
+        JsonArray object = getConfigJson();
+        SavedConfigModel[] array = new SavedConfigModel[object.size()];
+        for (int i = 0; i < object.size(); i++) {
+            array[i] = GsonSingleton.getSingleton().fromJson(object.get(i), SavedConfigModel.class);
         }
         return array;
     }
@@ -72,7 +87,7 @@ public class SavedConfigModel {
         }
     }
 
-    private static JsonObject getConfigJson() {
+    private static JsonArray getConfigJson() {
         JsonParser jsonParser = new JsonParser();
         File file = new File(JSON_FILE);
         try {
@@ -82,19 +97,19 @@ public class SavedConfigModel {
             }
 
             FileReader reader = new FileReader(JSON_FILE);
-            return jsonParser.parse(reader).getAsJsonObject();
+            return jsonParser.parse(reader).getAsJsonArray();
         } catch (IOException e) {
             LogUtils.getLogger().error("Could not parse SavedConfig json", e);
         } catch (JsonParseException | IllegalStateException e) {
             LogUtils.getLogger().error("SavedConfig Json Corrupted, unable to parse file", e);
             overwriteFile();
         }
-        return new JsonObject();
+        return new JsonArray();
     }
 
     private static void overwriteFile() {
         try (FileWriter writer = new FileWriter(JSON_FILE)) {
-            writer.write("{}");
+            writer.write("[]");
             writer.flush();
         } catch (IOException e2) {
             LogUtils.getLogger().error("Unable to over-write corrupted Json File", e2);
