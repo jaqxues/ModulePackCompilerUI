@@ -65,7 +65,7 @@ public class SavedConfigModel {
             JsonElement element = iterator.next();
             if (element.getAsJsonObject().get("SavedConfigName").getAsString().equals(model.getSavedConfigName())) {
                 iterator.remove();
-                return;
+                break;
             }
         }
         saveJson(object);

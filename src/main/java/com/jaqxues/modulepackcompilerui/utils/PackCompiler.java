@@ -24,7 +24,6 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.get
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
 
 /**
@@ -82,7 +81,7 @@ public class PackCompiler extends Task<File> {
 
         }
 
-        File targetFile = new File(dest, getMPFolder());
+        File targetFile = new File(dest, MiscUtils.getMPFolder());
         targetFile.mkdirs();
 
         for (File source : sources) {
@@ -172,7 +171,7 @@ public class PackCompiler extends Task<File> {
 
     private String[] getCommands(File manifest) {
         return new String[]{
-                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + getMPFolder(),
+                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + MiscUtils.getMPFolder(),
                 getPref(SDK_BUILD_TOOLS) + "\\dx.bat --dex --output=" + jarTarget.getAbsolutePath() + "_unsigned.jar " + compiledPath.getAbsolutePath(),
                 getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
         };
@@ -194,14 +193,6 @@ public class PackCompiler extends Task<File> {
         writer.flush();
         writer.close();
         return manifest;
-    }
-
-    /**
-     * Used instead of having duplicates throughout the project.
-     * @return
-     */
-    private static String getMPFolder() {
-        return ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/");
     }
 
     @Override

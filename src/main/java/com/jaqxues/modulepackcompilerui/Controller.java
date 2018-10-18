@@ -5,12 +5,14 @@ import com.jaqxues.modulepackcompilerui.models.SignConfig;
 import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
 import com.jaqxues.modulepackcompilerui.preferences.PreferencesDef;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
+import com.jaqxues.modulepackcompilerui.utils.MiscUtils;
 import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
 import com.sun.istack.internal.Nullable;
 
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -52,6 +54,11 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BU
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SELECTED_SIGN_CONFIG;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_CONFIGS;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_PACK;
+
+/**
+ * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
+ * Date: 2.10.2018 - Time 18:49.
+ */
 
 public class Controller {
 
@@ -530,20 +537,18 @@ public class Controller {
             return;
         }
 
-        List<File> sources = Arrays.asList(
-                new File(
-                        getPref(PROJECT_ROOT)
+        List<File> sources = new ArrayList<>();
 //                        + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
 //                        + getPref(MODULE_PACKAGE)
-                                + "/app/build/intermediates/transforms/desugar/pack/release/0/"
-                                + ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/")),
-                new File(
-                        getPref(PROJECT_ROOT)
+//                                + "/app/build/intermediates/transforms/desugar/pack/release/0/"
 //                        + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
 //                        + getPref(MODULE_PACKAGE)
-                                + "/app/build/tmp/kotlin-classes/packRelease/"
-                                + ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/"))
-        );
+//                                + "/app/build/tmp/kotlin-classes/packRelease/"
+
+        //noinspection unchecked
+        for (String string : (ArrayList<String>) getPref(FILE_SOURCES)) {
+            sources.add(new File(getPref(PROJECT_ROOT) + string + MiscUtils.getMPFolder()));
+        }
 
         try {
             PackCompiler packCompiler = new PackCompiler.Builder()
@@ -552,6 +557,8 @@ public class Controller {
                     .setSignConfig(keyTable.getSelectionModel().getSelectedItem())
                     .setSources(sources)
                     .build();
+            // TODO Async
+            LogUtils.getLogger().debug("Built PackCompiler Instance, Executing task...");
             packCompiler.call();
 
             LogUtils.getLogger().debug("Finished Pack Compiler");
@@ -637,19 +644,26 @@ public class Controller {
 
         TextField jdkPath = new TextField();
         jdkPath.setPromptText("JDK Installation Path");
+        String jdkPref = getPref(JDK_INSTALLATION_PATH);
+        if (jdkPref != null && new File(jdkPref).exists())
+            jdkPath.setText(getPref(JDK_INSTALLATION_PATH));
         Button jdkButtonChooser = new Button("Browse...");
         jdkButtonChooser.setOnAction((value) -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Example Folder: C:\\Program Files\\Java\\jdk1.8.0_172\n\nPlease use JDK 1.8.0 for Android Development. This Path will be used to find the jarsigner.exe in /bin of this Folder.");
             alert.setOnCloseRequest((dialogEvent) -> {
                 DirectoryChooser directoryChooser = new DirectoryChooser();
-                String programFiles = System.getenv("ProgramFiles");
-                if (programFiles != null && !programFiles.trim().isEmpty()) {
-                    File java = new File(programFiles + "/Java");
-                    if (java.exists())
-                        directoryChooser.setInitialDirectory(java);
-                    else
-                        directoryChooser.setInitialDirectory(new File(programFiles));
+                if (jdkPref != null && new File(jdkPref).exists()) {
+                    directoryChooser.setInitialDirectory(new File(jdkPref));
+                } else {
+                    String programFiles = System.getenv("ProgramFiles");
+                    if (programFiles != null && !programFiles.trim().isEmpty()) {
+                        File java = new File(programFiles + "/Java");
+                        if (java.exists())
+                            directoryChooser.setInitialDirectory(java);
+                        else
+                            directoryChooser.setInitialDirectory(new File(programFiles));
+                    }
                 }
                 File result = directoryChooser.showDialog(Main.getStage());
                 if (result != null)

@@ -11,6 +11,11 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+/**
+ * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
+ * Date: 2.10.2018 - Time 18:31.
+ */
+
 public class Main extends Application {
     private static WeakReference<Stage> stage;
 
