@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -73,6 +74,29 @@ public class SavedConfigModel {
 
     public static SavedConfigModel[] getConfigs() {
         JsonArray object = getConfigJson();
+        if (object.size() == 0) {
+            SavedConfigModel[] savedConfigModels = new SavedConfigModel[]{
+                    new SavedConfigModel()
+                            .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
+                            .setSavedConfigDate(System.currentTimeMillis())
+                            .setSavedConfigName("Default SnapTools Configuration")
+                            .setAttributes(Arrays.asList(
+                                    "Development=TRUE",
+                                    "PackVersion=1.0.0.0",
+                                    "Flavour=prod",
+                                    "Type=Premium",
+                                    "SCVersion=10.41.6.0"
+                            ))
+                            .setSavedConfigDate(System.currentTimeMillis())
+                            .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
+                            .setModuleSources(Arrays.asList(
+                            "/app/build/intermediates/transforms/desugar/pack/release/0/",
+                            "/app/build/tmp/kotlin-classes/packRelease/"
+                    ))
+            };
+            saveJson(GsonSingleton.getSingleton().toJsonTree(savedConfigModels));
+            return savedConfigModels;
+        }
         SavedConfigModel[] array = new SavedConfigModel[object.size()];
         for (int i = 0; i < object.size(); i++) {
             array[i] = GsonSingleton.getSingleton().fromJson(object.get(i), SavedConfigModel.class);

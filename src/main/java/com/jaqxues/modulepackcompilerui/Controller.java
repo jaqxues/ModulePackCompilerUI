@@ -10,6 +10,7 @@ import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
 import com.sun.istack.internal.Nullable;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,24 +22,35 @@ import java.util.Optional;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.cell.ComboBoxListCell;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.util.Callback;
 
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromCollection;
@@ -158,27 +170,6 @@ public class Controller {
             return new SimpleStringProperty(dateFormat.format(new Date(param.getValue().getSavedConfigDate())));
         });
 
-        if (SavedConfigModel.getConfigs().length == 0)
-            SavedConfigModel.addConfig(
-                    new SavedConfigModel()
-                            .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
-                            .setSavedConfigDate(System.currentTimeMillis())
-                            .setSavedConfigName("Default SnapTools Configuration")
-                            .setAttributes(Arrays.asList(
-                                    "Development=TRUE",
-                                    "PackVersion=1.0.0.0",
-                                    "Flavour=prod",
-                                    "Type=Premium",
-                                    "SCVersion=10.41.6.0"
-                            ))
-                            .setSavedConfigDate(System.currentTimeMillis())
-                            .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
-                            .setModuleSources(Arrays.asList(
-                                    "/app/build/intermediates/transforms/desugar/pack/release/0/",
-                                    "/app/build/tmp/kotlin-classes/packRelease/"
-                            ))
-            );
-
         savedConfigTable.getItems().addAll(
                 SavedConfigModel.getConfigs()
         );
@@ -246,7 +237,7 @@ public class Controller {
                 attrTable.getItems().remove(string);
                 removeFromCollection(ATTRIBUTES, string);
             }
-            PreferenceManager.addToCollection(ATTRIBUTES, string1);
+            addToCollection(ATTRIBUTES, string1);
             attrTable.getItems().add(string1);
         });
     }
@@ -333,7 +324,7 @@ public class Controller {
                 keyTable.getItems().remove(oldConfig);
                 removeFromCollection(SIGN_CONFIGS, oldConfig);
             }
-            PreferenceManager.addToCollection(SIGN_CONFIGS, signConfig);
+            addToCollection(SIGN_CONFIGS, signConfig);
             keyTable.getItems().add(signConfig);
         });
     }
@@ -462,8 +453,102 @@ public class Controller {
     }
 
     public void setSources(ActionEvent event) {
-        Dialog<List<File>> dialog = new Dialog<>();
-        // TODO FINISH
+        File projectRoot = new File(
+                getPref(PROJECT_ROOT) != null ?
+                        getPref(PROJECT_ROOT) :
+                        "."
+        );
+        if (getPref(PROJECT_ROOT) == null || !projectRoot.exists()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Manual Project Sources");
+            alert.setHeaderText("No Project Root set");
+            alert.setContentText("The Project Root needs to be set in order to set the Module Package");
+        }
+        Dialog<List<String>> dialog = new Dialog<>();
+        dialog.setTitle("Manual Project Sources");
+        dialog.setHeaderText("Manually set project sources");
+
+        dialog.getDialogPane().getButtonTypes()
+                .addAll(ButtonType.APPLY,
+                        ButtonType.CANCEL
+                );
+
+        ListView<String> listView = new ListView<>();
+        //noinspection unchecked
+        listView.getItems().addAll((List<String>) getPref(FILE_SOURCES));
+
+        ButtonBar buttonBar = new ButtonBar();
+        buttonBar.getButtons().addAll(
+                new Button("New..."),
+                new Button("Edit"),
+                new Button("Remove")
+        );
+        buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event1 -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Manual Project Sources");
+            if (getPref(PROJECT_ROOT) != null)
+                directoryChooser.setInitialDirectory(new File((String) getPref(PROJECT_ROOT)));
+            File selected = directoryChooser.showDialog(Main.getStage());
+            if (selected == null) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setContentText("Please select a Folder to use the Manual Project Sources Feature");
+                alert.setHeaderText("No Folder Selected");
+                alert.setTitle("Manual Project Sources");
+                alert.show();
+                return;
+            }
+
+            String relativized = "/" + projectRoot.toPath().relativize(selected.toPath()).toString();
+            LogUtils.getLogger().debug("Relativized Path: " + relativized);
+            addToCollection(FILE_SOURCES, relativized);
+            listView.getItems().add(relativized);
+        });
+        buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event12 -> {
+            String selected = listView.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Manual Project Sources");
+                alert.setHeaderText("No Item Selected");
+                alert.setContentText("To edit an item, select one in the list.");
+                alert.show();
+                return;
+            }
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setInitialDirectory(new File(getPref(PROJECT_ROOT) + "/" + selected));
+            chooser.setTitle("Manual Project Sources");
+            File chosenDir = chooser.showDialog(Main.getStage());
+            if (chosenDir == null) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setContentText("Please select a Folder to edit a source.");
+                alert.setHeaderText("No Folder Selected");
+                alert.setTitle("Manual Project Sources");
+                alert.show();
+                return;
+            }
+            // TODO Relativize
+            listView.getItems().remove(selected);
+            listView.getItems().add(chosenDir.getAbsolutePath());
+            removeFromCollection(FILE_SOURCES, chosenDir);
+        });
+        buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event13 -> {
+            String selected = listView.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Manual Project Sources");
+                alert.setHeaderText("No Selected an Item");
+                alert.setContentText("Please select an item in the list to delete it.");
+                alert.show();
+                return;
+            }
+            listView.getItems().remove(selected);
+            removeFromCollection(FILE_SOURCES, selected);
+        });
+
+        VBox vBox = new VBox(listView, buttonBar);
+        vBox.setFillWidth(true);
+        vBox.setPrefWidth(600d);
+        dialog.getDialogPane().setContent(vBox);
+        dialog.showAndWait();
     }
 
     public void addAttribute(ActionEvent event) {
