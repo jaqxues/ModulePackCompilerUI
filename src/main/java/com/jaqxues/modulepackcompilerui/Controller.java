@@ -160,11 +160,9 @@ public class Controller {
         }
 
         int[] selectedConfigs = new int[]{0};
-        SignConfig[] selectedConfig = new SignConfig[1];
         configs.forEach(signConfig -> {
             if (signConfig.isActivated()) {
                 selectedConfigs[0]++;
-                selectedConfig[0] = signConfig;
             }
         });
         if (selectedConfigs[0] > 1) {
@@ -174,11 +172,6 @@ public class Controller {
             alert.setContentText("Resetting activated Signing Configs to avoid Conflicts");
             alert.show();
             configs.forEach(signConfig -> signConfig.setActive(false));
-            return;
-        } else if (selectedConfigs[0] == 1) {
-            if (keyTable.getItems().contains(selectedConfig[0])) {
-                keyTable.getSelectionModel().select(selectedConfig[0]);
-            }
         }
     }
 
@@ -307,7 +300,8 @@ public class Controller {
         );
         storeButtonChooser.setOnAction(event -> {
             File file = fileChooser.showOpenDialog(Main.getStage());
-            storePath.setText(file.getAbsolutePath());
+            if (file != null)
+                storePath.setText(file.getAbsolutePath());
         });
 
         grid.add(new Label("KeyStore Path: "), 0, 0);
@@ -689,6 +683,8 @@ public class Controller {
         }
 
         try {
+            progressBar.setVisible(true);
+            progressBar.setProgress(-1.0);
             PackCompiler packCompiler = new PackCompiler.Builder()
                     .setAttributes(attrTable.getItems())
                     .setJarTarget(new File("Files/Packs/Pack"))
@@ -706,6 +702,8 @@ public class Controller {
             alert.setContentText(e.getMessage());
             alert.show();
         }
+        progressBar.setVisible(false);
+        progressBar.setProgress(0);
     }
 
     public void setSDKBuildTools(ActionEvent event) {
