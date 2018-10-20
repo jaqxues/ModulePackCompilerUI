@@ -2,6 +2,7 @@ package com.jaqxues.modulepackcompilerui.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 
@@ -11,6 +12,11 @@ import java.nio.file.Files;
  */
 
 public class FileUtils {
+    public static void copyFile(InputStream inputStream, File dest, CopyOption... options) throws IOException {
+        ensureParentFolder(dest);
+        Files.copy(inputStream, dest.toPath(), options);
+    }
+
     public static void copyFileOrFolder(File source, File dest, CopyOption...  options) throws IOException {
         if (source.isDirectory())
             copyFolder(source, dest, options);

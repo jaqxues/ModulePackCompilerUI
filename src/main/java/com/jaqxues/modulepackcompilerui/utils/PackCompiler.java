@@ -41,7 +41,6 @@ public class PackCompiler extends Task<File> {
     private SignConfig signConfig;
     private File currentPath = new File("Files/Process");
     private File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
-    private File freshCompiledDevJar = new File(currentPath.getAbsolutePath(), "freshCompiledDevJar.jar");
     private File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
 
     private PackCompiler(File[] sources, String[] attributes, File jarTarget, SignConfig signConfig) {
@@ -142,8 +141,6 @@ public class PackCompiler extends Task<File> {
 
     public void init() throws Exception {
 
-        if (!freshCompiledDevJar.exists())
-            throw new FileNotFoundException("You need to place the \"freshCompiledDev.jar\" into \"Files/Process\"");
         // ========================================================================================
         // Copy Class Files
         // ========================================================================================
@@ -151,10 +148,10 @@ public class PackCompiler extends Task<File> {
             compiledPath.mkdirs();
             copySources(compiledPath, sources);
 
-            FileUtils.copyFileOrFolder(
-                    freshCompiledDevJar,
+            FileUtils.copyFile(
+                    getClass().getResource("/freshCompiledDevJar.jar").openStream(),
                     preCompiledSToolsJar,
-                    StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING
+                    StandardCopyOption.REPLACE_EXISTING
             );
         } catch (IOException e) {
             LogUtils.getLogger().error("Could not copy Files", e);

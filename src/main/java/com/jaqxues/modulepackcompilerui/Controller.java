@@ -353,16 +353,18 @@ public class Controller {
             return "Select a Project Root";
         if (getPref(MODULE_PACKAGE) == null)
             return "Select a Package to build to Module Pack from";
-        if ((boolean) getPref(SIGN_PACK) && (((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty()))
-            return "Disable Signing Packs or add a new Key Configuration";
-        int[] foundActivated = new int[]{0};
-        keyTable.getItems().forEach(signConfig -> {
-            if (signConfig.isActivated())
-                foundActivated[0]++;
-        });
-        if (foundActivated[0] != 1)
-            return (foundActivated[0] == 0 ? "Unable to find an" : "Found more than one")
-                    + "activated Signing Configuration. Please select only one Singing Configuration";
+        if (getPref(SIGN_PACK)) {
+            if ((((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty()))
+                return "Disable Signing Packs or add a new Key Configuration";
+            int[] foundActivated = new int[]{0};
+            keyTable.getItems().forEach(signConfig -> {
+                if (signConfig.isActivated())
+                    foundActivated[0]++;
+            });
+            if (foundActivated[0] != 1)
+                return (foundActivated[0] == 0 ? "Unable to find an" : "Found more than one")
+                        + " activated Signing Configuration. Please select only one Singing Configuration";
+        }
         if (getPref(SDK_BUILD_TOOLS) == null)
             return "Set the SDK Build Tools Path in General Settings";
         if (getPref(JDK_INSTALLATION_PATH) == null)
@@ -862,8 +864,7 @@ public class Controller {
             });
             alert.show();
         }
-        //noinspection unchecked
-        for (String string : (List<String>) getPref(ATTRIBUTES))
+        for (String string : PreferenceManager.<List<String>>getPref(ATTRIBUTES))
             attrTable.getItems().remove(string);
         for (String string : putPref(ATTRIBUTES, model.getAttributes()))
             attrTable.getItems().add(string);
@@ -878,10 +879,9 @@ public class Controller {
         if (model.getSignConfig() != null) {
             if (!keyTable.getItems().contains(model.getSignConfig()))
                 keyTable.getItems().add(model.getSignConfig());
-            putPref(SELECTED_SIGN_CONFIG, model.getSignConfig());
+            model.getSignConfig().setActive(true);
             keyTable.getSelectionModel().select(model.getSignConfig());
-        } else
-            putPref(SELECTED_SIGN_CONFIG, null);
+        }
 
         putPref(FILE_SOURCES, model.getModuleSources());
     }
