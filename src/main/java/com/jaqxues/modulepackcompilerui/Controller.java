@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -63,9 +64,9 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_IN
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SELECTED_SIGN_CONFIG;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_CONFIGS;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_PACK;
+import static java.lang.Enum.valueOf;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -157,9 +158,27 @@ public class Controller {
                 keyTable.getItems().add(config);
         }
 
-        SignConfig selected = getPref(SELECTED_SIGN_CONFIG);
-        if (selected != null && keyTable.getItems().contains(selected))
-            keyTable.getSelectionModel().select(selected);
+        int[] selectedConfigs = new int[]{0};
+        SignConfig[] selectedConfig = new SignConfig[1];
+        configs.forEach(signConfig -> {
+            if (signConfig.isActivated()) {
+                selectedConfigs[0]++;
+                selectedConfig[0] = signConfig;
+            }
+        });
+        if (selectedConfigs[0] > 1) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Signing Configuration");
+            alert.setHeaderText("Selected more than one Signing Configuration");
+            alert.setContentText("Resetting activated Signing Configs to avoid Conflicts");
+            alert.show();
+            configs.forEach(signConfig -> signConfig.setActive(false));
+            return;
+        } else if (selectedConfigs[0] == 1) {
+            if (keyTable.getItems().contains(selectedConfig[0])) {
+                keyTable.getSelectionModel().select(selectedConfig[0]);
+            }
+        }
     }
 
     private void initSavedConfig() {
@@ -334,8 +353,16 @@ public class Controller {
             return "Select a Project Root";
         if (getPref(MODULE_PACKAGE) == null)
             return "Select a Package to build to Module Pack from";
-        if ((boolean) getPref(SIGN_PACK) && (((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty() || keyTable.getSelectionModel().getSelectedItem() == null))
-            return "Disable Signing Packs or select/add a new Key Configuration";
+        if ((boolean) getPref(SIGN_PACK) && (((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty()))
+            return "Disable Signing Packs or add a new Key Configuration";
+        int[] foundActivated = new int[]{0};
+        keyTable.getItems().forEach(signConfig -> {
+            if (signConfig.isActivated())
+                foundActivated[0]++;
+        });
+        if (foundActivated[0] != 1)
+            return (foundActivated[0] == 0 ? "Unable to find an" : "Found more than one")
+                    + "activated Signing Configuration. Please select only one Singing Configuration";
         if (getPref(SDK_BUILD_TOOLS) == null)
             return "Set the SDK Build Tools Path in General Settings";
         if (getPref(JDK_INSTALLATION_PATH) == null)
@@ -388,6 +415,12 @@ public class Controller {
                     return savedConfigModel.setSavedConfigName(name.getText().trim())
                             .setSavedConfigNotices(name.getText().trim())
                             .setSavedConfigDate(System.currentTimeMillis());
+                SignConfig[] signConfigs = new SignConfig[1];
+                keyTable.getItems().forEach(signConfig -> {
+                    if (signConfig.isActivated())
+                        signConfigs[0] = signConfig;
+                });
+                // TOdo disabled
                 return new SavedConfigModel().setSavedConfigName(name.getText().trim())
                         .setSavedConfigNotices(name.getText().trim())
                         .setSavedConfigDate(System.currentTimeMillis())
@@ -395,7 +428,7 @@ public class Controller {
                         .setModulePackage(getPref(MODULE_PACKAGE))
                         .setModuleSources(getPref(FILE_SOURCES))
                         .setAttributes(attrTable.getItems())
-                        .setSignConfig(getPref(SELECTED_SIGN_CONFIG));
+                        .setSignConfig(signConfigs[0]);
             }
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Empty Values");
@@ -435,6 +468,7 @@ public class Controller {
         inputDialog.setContentText("The Module Package Name is used to determine which files and code will be included in the Pack.\nAll Files in this Java Package will be included (and SubFiles of course).\n\nSnapTools uses for example \"com.ljmu.andre.snaptools.ModulePack\"\n\nIn case this PackageName is wrong, your pack will either not be compiled or won't work at all.");
         inputDialog.getEditor().setPromptText("com.ljmu.andre.snaptools.ModulePack");
         inputDialog.getEditor().setText(getPref(MODULE_PACKAGE));
+        inputDialog.getEditor().setPrefWidth(300d);
         inputDialog.showAndWait().ifPresent(
                 s -> putPref(MODULE_PACKAGE, s)
         );
@@ -476,6 +510,7 @@ public class Controller {
         ListView<String> listView = new ListView<>();
         //noinspection unchecked
         listView.getItems().addAll((List<String>) getPref(FILE_SOURCES));
+        listView.setPadding(new Insets(10));
 
         ButtonBar buttonBar = new ButtonBar();
         buttonBar.getButtons().addAll(
@@ -483,6 +518,7 @@ public class Controller {
                 new Button("Edit"),
                 new Button("Remove")
         );
+        buttonBar.setPadding(new Insets(10));
         buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event1 -> {
             DirectoryChooser directoryChooser = new DirectoryChooser();
             directoryChooser.setTitle("Manual Project Sources");
@@ -498,7 +534,7 @@ public class Controller {
                 return;
             }
 
-            String relativized = "/" + projectRoot.toPath().relativize(selected.toPath()).toString();
+            String relativized = File.separator + projectRoot.toPath().relativize(selected.toPath()).toString() + File.separator;
             LogUtils.getLogger().debug("Relativized Path: " + relativized);
             addToCollection(FILE_SOURCES, relativized);
             listView.getItems().add(relativized);
@@ -525,10 +561,14 @@ public class Controller {
                 alert.show();
                 return;
             }
-            // TODO Relativize
+
             listView.getItems().remove(selected);
-            listView.getItems().add(chosenDir.getAbsolutePath());
-            removeFromCollection(FILE_SOURCES, chosenDir);
+            removeFromCollection(FILE_SOURCES, selected);
+
+            String relativized = File.separator + projectRoot.toPath().relativize(chosenDir.toPath()).toString() + File.separator;
+            LogUtils.getLogger().debug("Relativized Path: " + relativized);
+            addToCollection(FILE_SOURCES, relativized);
+            listView.getItems().add(relativized);
         });
         buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event13 -> {
             String selected = listView.getSelectionModel().getSelectedItem();
@@ -638,7 +678,7 @@ public class Controller {
         try {
             PackCompiler packCompiler = new PackCompiler.Builder()
                     .setAttributes(attrTable.getItems())
-                    .setJarTarget(new File("TARGET"))
+                    .setJarTarget(new File("Files/Packs/Pack"))
                     .setSignConfig(keyTable.getSelectionModel().getSelectedItem())
                     .setSources(sources)
                     .build();
@@ -859,7 +899,7 @@ public class Controller {
     }
 
     public void resetCurrentPrefs(ActionEvent event) {
-
+        // TODO Finish Resetting Current Config
     }
 
     public void adbPushSettings(ActionEvent event) {

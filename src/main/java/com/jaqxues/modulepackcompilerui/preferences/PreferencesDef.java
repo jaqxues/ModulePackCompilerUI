@@ -21,7 +21,6 @@ public enum PreferencesDef {
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
     SIGN_PACK("SignPack", Boolean.class, true),
     SIGN_CONFIGS("SingConfigs", new TypeToken<List<SignConfig>>() {}.getType(), new ArrayList<SignConfig>()),
-    SELECTED_SIGN_CONFIG("SelectedSignConfig", SignConfig.class, null),
     SDK_BUILD_TOOLS("SdkBuildTools", String.class, null),
     JDK_INSTALLATION_PATH("JDKInstallation", String.class, null);
 

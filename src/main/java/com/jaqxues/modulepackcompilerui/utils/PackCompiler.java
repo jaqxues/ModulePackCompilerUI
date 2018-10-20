@@ -6,6 +6,7 @@ import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
 import com.sun.istack.internal.NotNull;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -19,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.concurrent.Task;
+import se.vidstige.jadb.JadbConnection;
+import se.vidstige.jadb.JadbDevice;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
@@ -36,7 +39,7 @@ public class PackCompiler extends Task<File> {
     private String[] attributes;
     private File jarTarget;
     private SignConfig signConfig;
-    private File currentPath = new File("Files");
+    private File currentPath = new File("Files/Process");
     private File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
     private File freshCompiledDevJar = new File(currentPath.getAbsolutePath(), "freshCompiledDevJar.jar");
     private File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
@@ -128,12 +131,19 @@ public class PackCompiler extends Task<File> {
     }
 
     private static void adbPush(File file) throws Exception {
-        if (getPref(ADB_PUSH_TOGGLE))
+        if (getPref(ADB_PUSH_TOGGLE)) {
+//            cmdProcess("adb");
+//            JadbConnection jadb = new JadbConnection();
+//            List<JadbDevice> devices = jadb.getDevices();
+            // TODO JADB Implementation
             cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + getPref(ADB_PUSH_PATH) + file.getName() + ".jar");
+        }
     }
 
     public void init() throws Exception {
 
+        if (!freshCompiledDevJar.exists())
+            throw new FileNotFoundException("You need to place the \"freshCompiledDev.jar\" into \"Files/Process\"");
         // ========================================================================================
         // Copy Class Files
         // ========================================================================================
@@ -153,7 +163,7 @@ public class PackCompiler extends Task<File> {
 
         File manifest = createManifestFile();
 
-        jarTarget.mkdirs();
+        jarTarget.getParentFile().mkdirs();
 
         String[] commands = getCommands(manifest);
         try {
@@ -253,7 +263,7 @@ public class PackCompiler extends Task<File> {
             if (jarTarget == null) {
                 throw new IllegalArgumentException("No Jar Target Provided");
             }
-            return new PackCompiler((File[]) sources.toArray(), attributes.toArray(new String[0]), jarTarget, signConfig);
+            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), jarTarget, signConfig);
         }
     }
 }

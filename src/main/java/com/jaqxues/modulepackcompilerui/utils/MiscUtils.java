@@ -13,7 +13,7 @@ public class MiscUtils {
     /**
      * Used instead of having duplicates throughout the project for dx.bat and copying files.
      *
-     * @return A String that converts the java <code>"com.example.java.package"</code> to
+     * @return A String that converted from <code>"com.example.java.package"</code> to
      * <code>"com/example/java/package"</code>
      */
     public static String getMPFolder() {

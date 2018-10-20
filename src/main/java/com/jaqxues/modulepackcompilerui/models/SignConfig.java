@@ -21,11 +21,15 @@ public class SignConfig {
     @SerializedName("KeyPassword")
     private String keyPassword;
 
+    @SerializedName("isActive")
+    private boolean isActive;
+
     public SignConfig(String storePath, String storePassword, String keyAlias, String keyPassword) {
         this.storePath = storePath;
         this.storePassword = storePassword;
         this.keyAlias = keyAlias;
         this.keyPassword = keyPassword;
+        this.isActive = false;
     }
 
     public String getStorePath() {
@@ -42,5 +46,13 @@ public class SignConfig {
 
     public String getKeyPassword() {
         return keyPassword;
+    }
+
+    public boolean isActivated() {
+        return isActive;
+    }
+
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
     }
 }

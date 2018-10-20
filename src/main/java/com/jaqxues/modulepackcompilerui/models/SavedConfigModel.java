@@ -23,7 +23,7 @@ import java.util.List;
 
 public class SavedConfigModel {
 
-    private static final String JSON_FILE = "SavedConfig.json";
+    private static final String JSON_FILE = "Files/SavedConfig.json";
 
     @SerializedName("SavedConfigName")
     public String savedConfigName;

@@ -22,7 +22,7 @@ import java.util.Map;
  */
 
 public class PreferenceManager {
-    private static final String FILE_NAME = "Preferences.json";
+    private static final String FILE_NAME = "Files/Preferences.json";
     private static final Object WRITE_LOCK = new Object();
     private static File preferencesFile;
     private static Map<String, Object> preferences = new HashMap<>();
