@@ -10,11 +10,9 @@ import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
 import com.sun.istack.internal.Nullable;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -23,10 +21,7 @@ import java.util.function.Consumer;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -36,20 +31,18 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.cell.ComboBoxListCell;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.util.Callback;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
@@ -66,7 +59,6 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJEC
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_CONFIGS;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_PACK;
-import static java.lang.Enum.valueOf;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -151,6 +143,15 @@ public class Controller {
         keyPasswordCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().getKeyPassword())
         );
+
+        keyTable.setRowFactory(tv -> new TableRow<SignConfig>() {
+            @Override
+            protected void updateItem(SignConfig item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && item.isActivated())
+                    setStyle("-fx-background-color: LimeGreen;");
+            }
+        });
 
         List<SignConfig> configs = getPref(SIGN_CONFIGS);
         if (!configs.isEmpty()) {
@@ -304,8 +305,10 @@ public class Controller {
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("KeyStore Files", "*.jks")
         );
-        storeButtonChooser.setOnAction(event ->
-                fileChooser.showOpenDialog(Main.getStage()));
+        storeButtonChooser.setOnAction(event -> {
+            File file = fileChooser.showOpenDialog(Main.getStage());
+            storePath.setText(file.getAbsolutePath());
+        });
 
         grid.add(new Label("KeyStore Path: "), 0, 0);
         grid.add(storePath, 1, 0);
@@ -339,6 +342,14 @@ public class Controller {
         Optional<SignConfig> result = dialog.showAndWait();
 
         result.ifPresent(signConfig -> {
+            if (!new File(signConfig.getStorePath()).exists()) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Sign Configuration");
+                alert.setHeaderText("Keystore does not exist");
+                alert.setContentText("This Keystore does not exist, please create a Keystore or correct the Path");
+                alert.show();
+                return;
+            }
             if (edit) {
                 keyTable.getItems().remove(oldConfig);
                 removeFromCollection(SIGN_CONFIGS, oldConfig);
@@ -903,6 +914,7 @@ public class Controller {
     }
 
     public void adbPushSettings(ActionEvent event) {
+        // TODO Add Dialog if multiple Devices etc
         TextInputDialog inputDialog = new TextInputDialog();
         inputDialog.setTitle("ADB Push Path");
         inputDialog.setHeaderText("Set ADB Push Path for your phone");
@@ -917,5 +929,19 @@ public class Controller {
         adbPushSettings.setDisable(
                 !togglePref(ADB_PUSH_TOGGLE)
         );
+    }
+
+    public void activateSignConfig(ActionEvent event) {
+        if (keyTable.getSelectionModel().getSelectedItem() == null) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Signing Configuration");
+            alert.setHeaderText("No Signing Configuration selected");
+            alert.setContentText("To activate a Signing Configuration, please select an item in the list");
+            alert.show();
+            return;
+        }
+        keyTable.getItems().forEach(signConfig -> signConfig.setActive(false));
+        keyTable.getSelectionModel().getSelectedItem().setActive(true);
+        keyTable.refresh();
     }
 }

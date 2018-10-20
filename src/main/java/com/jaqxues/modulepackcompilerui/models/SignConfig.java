@@ -21,7 +21,7 @@ public class SignConfig {
     @SerializedName("KeyPassword")
     private String keyPassword;
 
-    @SerializedName("isActive")
+    @SerializedName("IsActive")
     private boolean isActive;
 
     public SignConfig(String storePath, String storePassword, String keyAlias, String keyPassword) {

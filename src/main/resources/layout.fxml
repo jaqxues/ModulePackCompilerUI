@@ -120,6 +120,7 @@
                                           <Button mnemonicParsing="false" onAction="#addKeyConfig" text="New..." />
                                           <Button mnemonicParsing="false" onAction="#editKeyConfig" text="Edit..." />
                                           <Button mnemonicParsing="false" onAction="#removeKeyConfig" text="Delete" />
+                                          <Button mnemonicParsing="false" onAction="#activateSignConfig" text="Activate" />
                                        </buttons>
                                     </ButtonBar>
                                  </children>
