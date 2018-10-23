@@ -16,7 +16,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -41,7 +40,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -775,7 +773,7 @@ public class Controller {
             progressBar.setProgress(-1.0);
             PackCompiler packCompiler = new PackCompiler.Builder()
                     .setAttributes(attrTable.getItems())
-                    .setJarTarget(new File("Files/Packs/Pack"))
+                    .setJarTarget(new File("Files/Packs/STModulePack")) // TODO Use File From Template
                     .setSignConfig(keyTable.getSelectionModel().getSelectedItem())
                     .setSources(sources)
                     .build();

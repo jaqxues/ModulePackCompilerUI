@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import javafx.concurrent.Task;
 
@@ -205,6 +206,37 @@ public class PackCompiler extends Task<File> {
     public File call() throws Exception {
         init(); // TODO Elegance
         return null;
+    }
+
+    /**
+     * Copy from the SnapTools Project
+     * ===========================================================================
+     * A utility method to generalise filename generation instead of having
+     * duplicate code throughout the project.
+     * ===========================================================================
+     *
+     * @return A string that can be used to determine the filename of a ModulePack
+     * based on some MetaData
+     */
+    public static String getSTFileNameFromTemplate(String type, String scVersion, String flavour, @Nullable String packVersion) {
+        return "STModulePack"
+                + (!"prod".equals(flavour) ? getFlavourText(flavour) : "")
+                + (packVersion == null ? "" : "_" + packVersion)
+                + "_" + type
+                + "_" + scVersion;
+    }
+
+    public static String getFlavourText(String flavour) {
+        if (flavour != null) {
+            switch (flavour.toLowerCase()) {
+                case "beta":
+                    return "Beta";
+                case "prod":
+                    return "Release";
+            }
+        }
+        LogUtils.getLogger().error("Unable to get FlavourText", new Exception("Unknown Flavour: " + flavour));
+        return flavour;
     }
 
     public static class Builder {
