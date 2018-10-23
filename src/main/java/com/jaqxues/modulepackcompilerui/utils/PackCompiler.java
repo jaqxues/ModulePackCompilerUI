@@ -1,12 +1,10 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
-import com.jaqxues.modulepackcompilerui.models.SignConfig;
 import com.jaqxues.modulepackcompilerui.exceptions.CMDException;
 import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
-import com.sun.istack.internal.NotNull;
+import com.jaqxues.modulepackcompilerui.models.SignConfig;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -19,9 +17,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import javafx.concurrent.Task;
-import se.vidstige.jadb.JadbConnection;
-import se.vidstige.jadb.JadbDevice;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
@@ -55,12 +53,12 @@ public class PackCompiler extends Task<File> {
      * <code>dest</code> Folder, then copies every single file from the <code>sources</code>
      * recursively into the Destination Folder.
      *
-     * @param dest The Destination Path in form of a File
+     * @param dest    The Destination Path in form of a File
      * @param sources The Source File Directories containing the files you want to copy
-     * @throws IOException Java Exception while copying and deleting files
+     * @throws IOException          Java Exception while copying and deleting files
      * @throws NotCompiledException In case a Source in <code>sources</code> has not been found
      */
-    private static void copySources(@NotNull File dest, @NotNull File... sources) throws IOException, NotCompiledException {
+    private static void copySources(@Nonnull File dest, File... sources) throws IOException, NotCompiledException {
         // Delete Previous Files
         Files.walkFileTree(dest.toPath(), new SimpleFileVisitor<Path>() {
             @Override
@@ -106,8 +104,19 @@ public class PackCompiler extends Task<File> {
         }
     }
 
+    private static void adbPush(File file) throws Exception {
+        if (getPref(ADB_PUSH_TOGGLE)) {
+//            cmdProcess("adb");
+//            JadbConnection jadb = new JadbConnection();
+//            List<JadbDevice> devices = jadb.getDevices();
+            // TODO JADB Implementation
+            cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + getPref(ADB_PUSH_PATH) + file.getName() + ".jar");
+        }
+    }
+
     /**
      * Signs the {@link PackCompiler#jarTarget}_unsigned.jar, outputs {@link PackCompiler#jarTarget}.jar
+     *
      * @throws Exception Runtime Exception while running command and Signing the Jar
      */
     private void signOutput() throws Exception {
@@ -117,7 +126,7 @@ public class PackCompiler extends Task<File> {
                 jarTarget.getAbsolutePath(),
                 jarTarget.getAbsolutePath(),
                 signConfig.getKeyAlias()
-                );
+        );
         LogUtils.getLogger().debug("Generated Command: %s", command);
         Process process = Runtime.getRuntime().exec(command);
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(process.getOutputStream());
@@ -127,16 +136,6 @@ public class PackCompiler extends Task<File> {
         outputStreamWriter.close();
         if (process.waitFor() != 0)
             throw new CMDException("Could not execute Signing");
-    }
-
-    private static void adbPush(File file) throws Exception {
-        if (getPref(ADB_PUSH_TOGGLE)) {
-//            cmdProcess("adb");
-//            JadbConnection jadb = new JadbConnection();
-//            List<JadbDevice> devices = jadb.getDevices();
-            // TODO JADB Implementation
-            cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + getPref(ADB_PUSH_PATH) + file.getName() + ".jar");
-        }
     }
 
     public void init() throws Exception {

@@ -19,4 +19,12 @@ public class MiscUtils {
     public static String getMPFolder() {
         return ((String) getPref(MODULE_PACKAGE)).replaceAll("\\.", "/");
     }
+
+    public static String getLocalAppDataDir() {
+        return System.getenv("LOCALAPPDATA");
+    }
+
+    public static String getProgramFilesDir() {
+        return System.getenv("ProgramFiles");
+    }
 }

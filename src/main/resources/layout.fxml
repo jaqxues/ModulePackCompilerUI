@@ -35,15 +35,15 @@
                         <Button layoutY="35.0" mnemonicParsing="false" onAction="#setModulePackage" text="Set Module Package" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="40.0" />
                         <Separator layoutX="143.0" layoutY="34.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="115.0" />
                         <Button layoutX="223.0" layoutY="45.0" mnemonicParsing="false" onAction="#setSources" text="Manual Project Sources" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="70.0" />
-                        <CheckBox fx:id="toggleSignPack" layoutX="25.0" layoutY="91.0" mnemonicParsing="false" onAction="#toggleSignPack" text="Sign Packs" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="140.0" />
-                        <Separator layoutX="97.0" layoutY="165.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="225.0" />
-                        <Button layoutX="162.0" layoutY="230.0" mnemonicParsing="false" onAction="#setJDKInstallation" text="JDK Installation Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="245.0" />
-                        <Button mnemonicParsing="false" onAction="#setSDKBuildTools" text="SDK Build Tools Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="280.0" />
-                        <Separator prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="315.0" />
-                        <ProgressBar fx:id="progressBar" layoutX="99.0" layoutY="302.0" prefWidth="200.0" progress="0.0" visible="false" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="310.0" />
+                        <CheckBox fx:id="toggleSignPack" layoutX="25.0" layoutY="91.0" mnemonicParsing="false" onAction="#toggleSignPack" text="Sign Packs" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="130.0" />
+                        <Separator layoutX="97.0" layoutY="165.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="195.0" />
+                        <Button layoutX="162.0" layoutY="230.0" mnemonicParsing="false" onAction="#setJDKInstallation" text="JDK Installation Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="205.0" />
+                        <Button mnemonicParsing="false" onAction="#setSDKBuildTools" text="SDK Build Tools Path" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="235.0" />
+                        <Separator prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="270.0" />
+                        <ProgressBar fx:id="progressBar" layoutX="99.0" layoutY="302.0" prefWidth="200.0" progress="0.0" visible="false" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="290.0" />
                         <Button mnemonicParsing="false" onAction="#compileModPack" text="Compile Module Pack" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
-                        <CheckBox fx:id="adbPushToggle" layoutX="22.0" layoutY="191.0" mnemonicParsing="false" onAction="#adbPushToggle" text="Adb Push" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="190.0" />
-                        <Button fx:id="adbPushSettings" layoutX="173.0" layoutY="187.0" mnemonicParsing="false" onAction="#adbPushSettings" text="Adb Push Settings" AnchorPane.leftAnchor="160.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="190.0" />
+                        <CheckBox fx:id="adbPushToggle" layoutX="22.0" layoutY="191.0" mnemonicParsing="false" onAction="#adbPushToggle" text="Adb Push" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="160.0" />
+                        <Button fx:id="adbPushSettings" layoutX="173.0" layoutY="187.0" mnemonicParsing="false" onAction="#adbPushSettings" text="Adb Push Settings" AnchorPane.leftAnchor="160.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="160.0" />
                      </children>
                   </AnchorPane>
                </content>
@@ -76,8 +76,8 @@
                                     <ButtonBar prefHeight="40.0" prefWidth="200.0">
                                       <buttons>
                                           <Button mnemonicParsing="false" onAction="#addAttribute" text="New..." />
-                                          <Button mnemonicParsing="false" onAction="#editAttribute" text="Edit..." />
-                                        <Button mnemonicParsing="false" onAction="#removeAttribute" text="Delete" />
+                                          <Button fx:id="attrEditBtn" disable="true" mnemonicParsing="false" onAction="#editAttribute" text="Edit..." />
+                                        <Button fx:id="attrRemoveBtn" disable="true" mnemonicParsing="false" onAction="#removeAttribute" text="Delete" />
                                       </buttons>
                                     </ButtonBar>
                                  </children>
@@ -118,9 +118,9 @@
                                     <ButtonBar prefHeight="40.0" prefWidth="200.0">
                                        <buttons>
                                           <Button mnemonicParsing="false" onAction="#addKeyConfig" text="New..." />
-                                          <Button mnemonicParsing="false" onAction="#editKeyConfig" text="Edit..." />
-                                          <Button mnemonicParsing="false" onAction="#removeKeyConfig" text="Delete" />
-                                          <Button mnemonicParsing="false" onAction="#activateSignConfig" text="Activate" />
+                                          <Button fx:id="keyEditConfigBtn" disable="true" mnemonicParsing="false" onAction="#editKeyConfig" text="Edit..." />
+                                          <Button fx:id="keyRemoveConfigBtn" disable="true" mnemonicParsing="false" onAction="#removeKeyConfig" text="Delete" />
+                                          <Button fx:id="selectSignConfigBtn" disable="true" mnemonicParsing="false" onAction="#activateSignConfig" text="Activate" />
                                        </buttons>
                                     </ButtonBar>
                                  </children>
@@ -160,10 +160,10 @@
                                     <ButtonBar prefHeight="40.0" prefWidth="200.0">
                                        <buttons>
                                           <Button mnemonicParsing="false" onAction="#saveSavedConfig" text="Save..." />
-                                          <Button mnemonicParsing="false" onAction="#editSavedConfig" text="Edit..." />
-                                          <Button mnemonicParsing="false" onAction="#removeSavedConfig" text="Delete" />
-                                          <Button mnemonicParsing="false" onAction="#restoreSavedConfig" text="Restore" />
                                           <Button mnemonicParsing="false" onAction="#resetCurrentPrefs" text="Reset..." />
+                                          <Button fx:id="savedEditBtn" disable="true" mnemonicParsing="false" onAction="#editSavedConfig" text="Edit..." />
+                                          <Button fx:id="savedRemoveBtn" disable="true" mnemonicParsing="false" onAction="#removeSavedConfig" text="Delete" />
+                                          <Button fx:id="savedRestoreBtn" disable="true" mnemonicParsing="false" onAction="#restoreSavedConfig" text="Restore" />
                                        </buttons>
                                     </ButtonBar>
                                  </children>

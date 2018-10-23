@@ -7,7 +7,6 @@ import com.jaqxues.modulepackcompilerui.preferences.PreferencesDef;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 import com.jaqxues.modulepackcompilerui.utils.MiscUtils;
 import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
-import com.sun.istack.internal.Nullable;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -17,10 +16,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -33,7 +36,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Tab;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -73,6 +76,10 @@ public class Controller {
     private TableColumn<String, String> attrNameCol;
     @FXML
     private TableColumn<String, String> attrValueCol;
+    @FXML
+    private Button attrEditBtn;
+    @FXML
+    private Button attrRemoveBtn;
 
     @FXML
     private CheckBox toggleSignPack;
@@ -86,6 +93,12 @@ public class Controller {
     private TableColumn<SignConfig, String> keyAliasCol;
     @FXML
     private TableColumn<SignConfig, String> keyPasswordCol;
+    @FXML
+    private Button keyEditConfigBtn;
+    @FXML
+    private Button keyRemoveConfigBtn;
+    @FXML
+    private Button selectSignConfigBtn;
 
     @FXML
     private TableView<SavedConfigModel> savedConfigTable;
@@ -95,6 +108,12 @@ public class Controller {
     private TableColumn<SavedConfigModel, String> savedConfigNoticesCol;
     @FXML
     private TableColumn<SavedConfigModel, String> savedConfigDateCol;
+    @FXML
+    private Button savedEditBtn;
+    @FXML
+    private Button savedRemoveBtn;
+    @FXML
+    private Button savedRestoreBtn;
 
     @FXML
     private ProgressBar progressBar;
@@ -121,15 +140,20 @@ public class Controller {
         attrValueCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().split("=")[1]));
 
-        List<String> list = getPref(ATTRIBUTES);
-        for (String item : list)
-            attrTable.getItems().add(item);
+        //noinspection unchecked
+        attrTable.getItems().addAll((List<String>) getPref(ATTRIBUTES));
+
+        attrTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            attrEditBtn.setDisable(false);
+            attrRemoveBtn.setDisable(false);
+        });
     }
 
     private void initSigning() {
-        toggleSignPack.setSelected(getPref(SIGN_PACK));
+        boolean selected = getPref(SIGN_PACK);
+        toggleSignPack.setSelected(selected);
 
-        keyTable.setDisable(!(boolean) getPref(SIGN_PACK));
+        keyTable.setDisable(!selected);
 
         storePathCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().getStorePath())
@@ -148,31 +172,52 @@ public class Controller {
             @Override
             protected void updateItem(SignConfig item, boolean empty) {
                 super.updateItem(item, empty);
-                if (item != null && item.isActivated())
-                    setStyle("-fx-background-color: LimeGreen;");
+                if (item != null && item.isActivated()) {
+                    setStyle("-fx-background-color: lightgreen");
+                    selectedProperty().addListener((observable, oldValue, newValue) -> {
+                        if (newValue)
+                            setStyle("-fx-background-color: green;");
+                        else
+                            setStyle("-fx-background-color: lightgreen;");
+                    });
+                }
             }
         });
 
         List<SignConfig> configs = getPref(SIGN_CONFIGS);
-        if (!configs.isEmpty()) {
-            for (SignConfig config : configs)
-                keyTable.getItems().add(config);
-        }
+        keyTable.getItems().addAll(configs);
 
-        int[] selectedConfigs = new int[]{0};
+        int[] selectedConfigs = {0};
         configs.forEach(signConfig -> {
-            if (signConfig.isActivated()) {
+            if (signConfig.isActivated())
                 selectedConfigs[0]++;
-            }
         });
         if (selectedConfigs[0] > 1) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Signing Configuration");
             alert.setHeaderText("Selected more than one Signing Configuration");
-            alert.setContentText("Resetting activated Signing Configs to avoid Conflicts");
+            alert.setContentText("Resetting activated Signing Configurations to avoid Conflicts");
             alert.show();
             configs.forEach(signConfig -> signConfig.setActive(false));
+            keyTable.refresh();
         }
+
+        selectSignConfigBtn.setText(
+                keyTable.getSelectionModel().getSelectedItem() == null || keyTable.getSelectionModel().getSelectedItem().isActivated() ?
+                        "Activate" :
+                        "Disable"
+        );
+
+        keyTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            selectSignConfigBtn.setDisable(false);
+            selectSignConfigBtn.setText(
+                    newValue.isActivated() ?
+                            "Disable" :
+                            "Activate"
+            );
+            keyEditConfigBtn.setDisable(false);
+            keyRemoveConfigBtn.setDisable(false);
+        });
     }
 
     private void initSavedConfig() {
@@ -186,14 +231,24 @@ public class Controller {
         savedConfigTable.getItems().addAll(
                 SavedConfigModel.getConfigs()
         );
+
+        savedConfigTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            savedEditBtn.setDisable(false);
+            savedRemoveBtn.setDisable(false);
+            savedRestoreBtn.setDisable(false);
+        });
     }
 
     private void initAdbPush() {
         boolean adbPush = getPref(ADB_PUSH_TOGGLE);
         adbPushToggle.setSelected(adbPush);
         adbPushSettings.setDisable(!adbPush);
-
+        // TODO JADB IMPLEMENTATION
     }
+
+    // ============================================================================================
+    // DIALOGS AND SIMILAR UI COMPONENTS
+    // ============================================================================================
 
     private void attrInputDialog(@Nullable String string) {
         boolean edit = string != null;
@@ -353,30 +408,6 @@ public class Controller {
         });
     }
 
-    private String checkPreferences() {
-        if (getPref(PROJECT_ROOT) == null)
-            return "Select a Project Root";
-        if (getPref(MODULE_PACKAGE) == null)
-            return "Select a Package to build to Module Pack from";
-        if (getPref(SIGN_PACK)) {
-            if ((((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty()))
-                return "Disable Signing Packs or add a new Key Configuration";
-            int[] foundActivated = new int[]{0};
-            keyTable.getItems().forEach(signConfig -> {
-                if (signConfig.isActivated())
-                    foundActivated[0]++;
-            });
-            if (foundActivated[0] != 1)
-                return (foundActivated[0] == 0 ? "Unable to find an" : "Found more than one")
-                        + " activated Signing Configuration. Please select only one Singing Configuration";
-        }
-        if (getPref(SDK_BUILD_TOOLS) == null)
-            return "Set the SDK Build Tools Path in General Settings";
-        if (getPref(JDK_INSTALLATION_PATH) == null)
-            return "Set the JDK Installation Path in General Settings";
-        return null;
-    }
-
     private void savedConfigInputDialog(@Nullable SavedConfigModel savedConfigModel) {
         boolean edit = savedConfigModel != null;
         Dialog<SavedConfigModel> dialog = new Dialog<>();
@@ -404,6 +435,8 @@ public class Controller {
             name.setText(savedConfigModel.getSavedConfigName());
             notice.setText(savedConfigModel.getSavedConfigNotices());
         }
+        notice.setPrefWidth(300d);
+        name.setPrefWidth(300d);
 
         grid.add(new Label("Name: "), 0, 0);
         grid.add(name, 1, 0);
@@ -415,9 +448,9 @@ public class Controller {
         Platform.runLater(name::requestFocus);
 
         dialog.setResultConverter(param -> {
-            if (param == ButtonType.APPLY
-                    && !name.getText().trim().isEmpty()
-                    && !notice.getText().trim().isEmpty()) {
+            if (param == ButtonType.CANCEL)
+                return null;
+            if (!name.getText().trim().isEmpty()) {
                 if (edit)
                     return savedConfigModel.setSavedConfigName(name.getText().trim())
                             .setSavedConfigNotices(name.getText().trim())
@@ -438,9 +471,9 @@ public class Controller {
                         .setSignConfig(signConfigs[0]);
             }
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Empty Values");
-            alert.setHeaderText("Empty Values");
-            alert.setContentText("You cannot provide empty values to save a Configuration");
+            alert.setTitle("Empty Name");
+            alert.setHeaderText("Empty Name");
+            alert.setContentText("You cannot provide empty names to save a Configuration");
             alert.show();
             return null;
         });
@@ -456,7 +489,7 @@ public class Controller {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setHeaderText("Duplicate Detected");
                 alert.setTitle("Unable to save Configuration");
-                alert.setContentText("A Saved Configuration with the same Name already exists, please chose a new name.");
+                alert.setContentText("A Saved Configuration with the same Name already exists, please chose a new name or delete the old Configuration.");
                 alert.show();
             } else
                 savedConfigTable.getItems().add(savedConfigModel1);
@@ -494,17 +527,17 @@ public class Controller {
     }
 
     public void setSources(ActionEvent event) {
-        File projectRoot = new File(
-                getPref(PROJECT_ROOT) != null ?
-                        getPref(PROJECT_ROOT) :
-                        "."
-        );
-        if (getPref(PROJECT_ROOT) == null || !projectRoot.exists()) {
+        String projectRoot = getPref(PROJECT_ROOT);
+        if (projectRoot == null || !new File(projectRoot).exists()) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Manual Project Sources");
             alert.setHeaderText("No Project Root set");
             alert.setContentText("The Project Root needs to be set in order to set the Module Package");
+            alert.show();
+            return;
         }
+        File projectRootFile = new File(projectRoot);
+
         Dialog<List<String>> dialog = new Dialog<>();
         dialog.setTitle("Manual Project Sources");
         dialog.setHeaderText("Manually set project sources");
@@ -526,11 +559,12 @@ public class Controller {
                 new Button("Remove")
         );
         buttonBar.setPadding(new Insets(10));
+        buttonBar.getButtons().get(1).setDisable(true);
+        buttonBar.getButtons().get(2).setDisable(true);
         buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event1 -> {
             DirectoryChooser directoryChooser = new DirectoryChooser();
             directoryChooser.setTitle("Manual Project Sources");
-            if (getPref(PROJECT_ROOT) != null)
-                directoryChooser.setInitialDirectory(new File((String) getPref(PROJECT_ROOT)));
+            directoryChooser.setInitialDirectory(projectRootFile);
             File selected = directoryChooser.showDialog(Main.getStage());
             if (selected == null) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -541,23 +575,16 @@ public class Controller {
                 return;
             }
 
-            String relativized = File.separator + projectRoot.toPath().relativize(selected.toPath()).toString() + File.separator;
+            String relativized = File.separator + projectRootFile.toPath().relativize(selected.toPath()).toString() + File.separator;
             LogUtils.getLogger().debug("Relativized Path: " + relativized);
             addToCollection(FILE_SOURCES, relativized);
             listView.getItems().add(relativized);
         });
         buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event12 -> {
             String selected = listView.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Manual Project Sources");
-                alert.setHeaderText("No Item Selected");
-                alert.setContentText("To edit an item, select one in the list.");
-                alert.show();
-                return;
-            }
+
             DirectoryChooser chooser = new DirectoryChooser();
-            chooser.setInitialDirectory(new File(getPref(PROJECT_ROOT) + "/" + selected));
+            chooser.setInitialDirectory(new File(projectRootFile, selected));
             chooser.setTitle("Manual Project Sources");
             File chosenDir = chooser.showDialog(Main.getStage());
             if (chosenDir == null) {
@@ -572,7 +599,7 @@ public class Controller {
             listView.getItems().remove(selected);
             removeFromCollection(FILE_SOURCES, selected);
 
-            String relativized = File.separator + projectRoot.toPath().relativize(chosenDir.toPath()).toString() + File.separator;
+            String relativized = File.separator + projectRootFile.toPath().relativize(chosenDir.toPath()).toString() + File.separator;
             LogUtils.getLogger().debug("Relativized Path: " + relativized);
             addToCollection(FILE_SOURCES, relativized);
             listView.getItems().add(relativized);
@@ -591,6 +618,11 @@ public class Controller {
             removeFromCollection(FILE_SOURCES, selected);
         });
 
+        listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            buttonBar.getButtons().get(1).setDisable(false);
+            buttonBar.getButtons().get(2).setDisable(false);
+        });
+
         VBox vBox = new VBox(listView, buttonBar);
         vBox.setFillWidth(true);
         vBox.setPrefWidth(600d);
@@ -603,25 +635,11 @@ public class Controller {
     }
 
     public void editAttribute(ActionEvent event) {
-        String attribute = attrTable.getSelectionModel().getSelectedItem();
-        if (attribute == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please select an attribute to edit it");
-            alert.show();
-            return;
-        }
-
-        attrInputDialog(attribute);
+        attrInputDialog(attrTable.getSelectionModel().getSelectedItem());
     }
 
     public void removeAttribute(ActionEvent event) {
         String attribute = attrTable.getSelectionModel().getSelectedItem();
-        if (attribute == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please select an Attribute to delete it");
-            alert.show();
-            return;
-        }
         attrTable.getItems().remove(attribute);
         removeFromCollection(ATTRIBUTES, attribute);
     }
@@ -637,30 +655,15 @@ public class Controller {
     }
 
     public void editKeyConfig(ActionEvent event) {
-        SignConfig selected = keyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please Select a Key in the List to Edit it");
-            alert.show();
-            return;
-        }
-
-        keyInputDialog(selected);
+        keyInputDialog(keyTable.getSelectionModel().getSelectedItem());
     }
 
     public void removeKeyConfig(ActionEvent event) {
-        SignConfig selected = keyTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please Select a Key in the List to Remove it");
-            alert.show();
-            return;
-        }
-
-        keyTable.getItems().remove(selected);
+        keyTable.getItems().remove(keyTable.getSelectionModel().getSelectedItem());
     }
 
     public void compileModPack(ActionEvent event) {
+        // TODO
         String preferenceCheck = checkPreferences();
         if (preferenceCheck != null) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -719,17 +722,19 @@ public class Controller {
         GridPane grid = new GridPane();
         grid.setVgap(10);
         grid.setHgap(10);
-        grid.setPadding(new Insets(0, 150, 10, 10));
+        grid.setPadding(new Insets(30, 150, 10, 10));
 
         TextField buildToolsPath = new TextField();
         buildToolsPath.setPromptText("Build Tools Path");
+        buildToolsPath.setPrefWidth(400d);
+
         Button sdkButtonChooser = new Button("Browse...");
         sdkButtonChooser.setOnAction((value) -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setContentText("Example Folder: C:\\Users\\ExampleUser\\AppData\\Local\\Android\\Sdk\\build-tools\\26.0.2\n\n The Build Tools Version does not matter. Please make sure that the Folder contains the \"dx.bat\" File which is an essential part of compiling Module Packs.\n\nIf the Folder does not contain a such file, please check in the SDK Manager and download the BuildTools.");
             alert.setOnCloseRequest((dialogEvent) -> {
                 DirectoryChooser directoryChooser = new DirectoryChooser();
-                File file = new File(System.getenv("LOCALAPPDATA") + "/Android/Sdk/build-tools");
+                File file = new File(MiscUtils.getLocalAppDataDir() + "/Android/Sdk/build-tools");
                 if (file.exists())
                     directoryChooser.setInitialDirectory(file);
                 File result = directoryChooser.showDialog(Main.getStage());
@@ -758,9 +763,7 @@ public class Controller {
 
         Optional<String> result = dialog.showAndWait();
 
-        result.ifPresent(strings -> {
-            putPref(SDK_BUILD_TOOLS, result.get());
-        });
+        result.ifPresent(strings -> putPref(SDK_BUILD_TOOLS, result.get()));
     }
 
     public void setJDKInstallation(ActionEvent event) {
@@ -776,7 +779,7 @@ public class Controller {
         GridPane grid = new GridPane();
         grid.setVgap(10);
         grid.setHgap(10);
-        grid.setPadding(new Insets(0, 150, 10, 10));
+        grid.setPadding(new Insets(30, 150, 10, 10));
 
         TextField jdkPath = new TextField();
         jdkPath.setPromptText("JDK Installation Path");
@@ -792,7 +795,7 @@ public class Controller {
                 if (jdkPref != null && new File(jdkPref).exists()) {
                     directoryChooser.setInitialDirectory(new File(jdkPref));
                 } else {
-                    String programFiles = System.getenv("ProgramFiles");
+                    String programFiles = MiscUtils.getProgramFilesDir();
                     if (programFiles != null && !programFiles.trim().isEmpty()) {
                         File java = new File(programFiles + "/Java");
                         if (java.exists())
@@ -836,24 +839,11 @@ public class Controller {
     }
 
     public void editSavedConfig(ActionEvent event) {
-        SavedConfigModel savedConfigModel = savedConfigTable.getSelectionModel().getSelectedItem();
-        if (savedConfigModel == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please select a Saved Configuration to edit it");
-            alert.show();
-            return;
-        }
-        savedConfigInputDialog(savedConfigModel);
+        savedConfigInputDialog(savedConfigTable.getSelectionModel().getSelectedItem());
     }
 
     public void restoreSavedConfig(ActionEvent event) {
         SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
-        if (model == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please select a Configuration to restore it");
-            alert.show();
-            return;
-        }
 
         if (model.getProjectRoot() == null || !new File(model.getProjectRoot()).exists()) {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -897,12 +887,6 @@ public class Controller {
 
     public void removeSavedConfig(ActionEvent event) {
         SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
-        if (model == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please select a Configuration to delete it");
-            alert.show();
-            return;
-        }
         savedConfigTable.getItems().remove(model);
         SavedConfigModel.removeConfig(model);
     }
@@ -918,6 +902,7 @@ public class Controller {
         inputDialog.setHeaderText("Set ADB Push Path for your phone");
         if (getPref(ADB_PUSH_PATH) != null)
             inputDialog.getEditor().setText(getPref(ADB_PUSH_PATH));
+        inputDialog.getEditor().setPrefWidth(400d);
         inputDialog.getEditor().setPromptText("ADB Push Path");
         inputDialog.setContentText("The Adb Push Path defines where the Packs are pushed to on your phone.\nUsually /sdcard/SnapTools/ModulePacks/");
         inputDialog.showAndWait().ifPresent(s -> putPref(ADB_PUSH_PATH, s));
@@ -930,16 +915,37 @@ public class Controller {
     }
 
     public void activateSignConfig(ActionEvent event) {
-        if (keyTable.getSelectionModel().getSelectedItem() == null) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Signing Configuration");
-            alert.setHeaderText("No Signing Configuration selected");
-            alert.setContentText("To activate a Signing Configuration, please select an item in the list");
-            alert.show();
-            return;
-        }
         keyTable.getItems().forEach(signConfig -> signConfig.setActive(false));
         keyTable.getSelectionModel().getSelectedItem().setActive(true);
         keyTable.refresh();
+    }
+
+
+    // ============================================================================================
+    // OTHERS
+    // ============================================================================================
+
+    private String checkPreferences() {
+        if (getPref(PROJECT_ROOT) == null)
+            return "Select a Project Root";
+        if (getPref(MODULE_PACKAGE) == null)
+            return "Select a Package to build to Module Pack from";
+        if (getPref(SIGN_PACK)) {
+            if ((((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty()))
+                return "Disable Signing Packs or add a new Key Configuration";
+            int[] foundActivated = new int[]{0};
+            keyTable.getItems().forEach(signConfig -> {
+                if (signConfig.isActivated())
+                    foundActivated[0]++;
+            });
+            if (foundActivated[0] != 1)
+                return (foundActivated[0] == 0 ? "Unable to find an" : "Found more than one")
+                        + " activated Signing Configuration. Please select only one Singing Configuration";
+        }
+        if (getPref(SDK_BUILD_TOOLS) == null)
+            return "Set the SDK Build Tools Path in General Settings";
+        if (getPref(JDK_INSTALLATION_PATH) == null)
+            return "Set the JDK Installation Path in General Settings";
+        return null;
     }
 }
