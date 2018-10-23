@@ -1,5 +1,4 @@
-\.idea
-\out
-ModulePackCompilerUI.iml
-Preferences.json
-\Files
+/.idea/
+/build/
+/out/
+/Files/

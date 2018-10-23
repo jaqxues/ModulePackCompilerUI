@@ -16,14 +16,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -36,13 +35,13 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -496,6 +495,92 @@ public class Controller {
         });
     }
 
+    @CheckReturnValue
+    private Dialog<String> getDirSelectorDialog(String title, String header, String contentText,
+                                                String pathName, String pathValue) {
+        return getDirSelectorDialog(title, header, contentText, pathName, pathValue, null);
+    }
+
+    @CheckReturnValue
+    private Dialog<String> getDirSelectorDialog(String title, String header, String contentText,
+                                                String pathName, String pathValue, Alert alert) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        dialog.setHeaderText(header);
+
+        dialog.getDialogPane().getButtonTypes().addAll(
+                ButtonType.APPLY,
+                ButtonType.CANCEL
+        );
+
+        TextField textInput = new TextField();
+        textInput.setPrefWidth(500d);
+        textInput.setPromptText(pathName);
+        if (pathValue != null)
+            textInput.setText(pathValue);
+        Button pathBtn = new Button("Browse...");
+        pathBtn.setOnAction((value) -> {
+            if (alert != null) {
+                alert.showAndWait().ifPresent(buttonType -> {
+                    if (buttonType == ButtonType.OK) {
+                        File file = getDirChooser(title, pathValue).showDialog(Main.getStage());
+                        if (file != null)
+                            textInput.setText(file.getAbsolutePath());
+                    }
+                });
+            } else {
+                File file = getDirChooser(title, pathValue).showDialog(Main.getStage());
+                if (file != null)
+                    textInput.setText(file.getAbsolutePath());
+            }
+        });
+
+
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(30, 10, 30, 10));
+        gridPane.setHgap(10d);
+        gridPane.setVgap(10d);
+        gridPane.add(new Label(pathName), 0, 0);
+        gridPane.add(textInput, 1, 0);
+        gridPane.add(pathBtn, 2, 0);
+        dialog.getDialogPane().setContent(gridPane);
+
+        Platform.runLater(textInput::requestFocus);
+
+        if (contentText != null) {
+            Label textContent = new Label(contentText);
+            gridPane.add(textContent, 0, 1, 3, 1);
+        }
+
+        dialog.setResultConverter(param -> {
+            if (param == ButtonType.APPLY && !textInput.getText().trim().isEmpty()) {
+                String string = textInput.getText().trim();
+                if (!new File(string).exists()) {
+                    Alert alert1 = new Alert(Alert.AlertType.ERROR);
+                    alert1.setTitle(title);
+                    alert.setHeaderText("This Path does not exist");
+                    alert.setContentText("The file or folder you specified does not exist");
+                    alert.show();
+                    return null;
+                }
+                return string;
+            }
+            return null;
+        });
+        return dialog;
+    }
+
+    @CheckReturnValue
+    private static DirectoryChooser getDirChooser(String title, @Nullable String initial) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(title);
+        if (initial != null) {
+            File initialDir = new File(initial);
+            if (initialDir.exists())
+                chooser.setInitialDirectory(initialDir);
+        }
+        return chooser;
+    }
 
     // ============================================================================================
     // EVENT METHODS
@@ -710,128 +795,37 @@ public class Controller {
     }
 
     public void setSDKBuildTools(ActionEvent event) {
-        Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle("Path Configurations");
-        dialog.setHeaderText("SDK Build Tools Installation Path");
+        String path = getPref(SDK_BUILD_TOOLS);
+        if (path == null || !new File(path).exists()) {
+            path = MiscUtils.getLocalAppDataDir() + "/Android/Sdk/build-tools";
+            if (new File(path).exists())
+                path = MiscUtils.getLocalAppDataDir();
+        }
 
-        dialog.getDialogPane().getButtonTypes().addAll(
-                ButtonType.APPLY,
-                ButtonType.CANCEL
-        );
-
-        GridPane grid = new GridPane();
-        grid.setVgap(10);
-        grid.setHgap(10);
-        grid.setPadding(new Insets(30, 150, 10, 10));
-
-        TextField buildToolsPath = new TextField();
-        buildToolsPath.setPromptText("Build Tools Path");
-        buildToolsPath.setPrefWidth(400d);
-
-        Button sdkButtonChooser = new Button("Browse...");
-        sdkButtonChooser.setOnAction((value) -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Example Folder: C:\\Users\\ExampleUser\\AppData\\Local\\Android\\Sdk\\build-tools\\26.0.2\n\n The Build Tools Version does not matter. Please make sure that the Folder contains the \"dx.bat\" File which is an essential part of compiling Module Packs.\n\nIf the Folder does not contain a such file, please check in the SDK Manager and download the BuildTools.");
-            alert.setOnCloseRequest((dialogEvent) -> {
-                DirectoryChooser directoryChooser = new DirectoryChooser();
-                File file = new File(MiscUtils.getLocalAppDataDir() + "/Android/Sdk/build-tools");
-                if (file.exists())
-                    directoryChooser.setInitialDirectory(file);
-                File result = directoryChooser.showDialog(Main.getStage());
-                if (result != null)
-                    buildToolsPath.setText(result.getAbsolutePath());
-                alert.close();
-            });
-            alert.show();
-        });
-
-        grid.add(new Label("SDK BuildTools Path"), 0, 0);
-        grid.add(buildToolsPath, 1, 0);
-        grid.add(sdkButtonChooser, 2, 0);
-
-        dialog.getDialogPane().setContent(grid);
-
-        Platform.runLater(buildToolsPath::requestFocus);
-
-        dialog.setResultConverter(param -> {
-            if (param == ButtonType.APPLY
-                    && !buildToolsPath.getText().trim().isEmpty()) {
-                return buildToolsPath.getText().trim();
-            }
-            return null;
-        });
-
-        Optional<String> result = dialog.showAndWait();
-
-        result.ifPresent(strings -> putPref(SDK_BUILD_TOOLS, result.get()));
+        getDirSelectorDialog(
+                "Path Configurations",
+                "SDK Build Tools Installation Path",
+                "Example Folder: C:\\Users\\ExampleUser\\AppData\\Local\\Android\\Sdk\\build-tools\\26.0.2\n\n The Build Tools Version does not matter. Please make sure that the Folder contains the \"dx.bat\" File which is an essential part of compiling Module Packs.\n\nIf the Folder does not contain a such file, please check in the SDK Manager and download the BuildTools.",
+                "Build Tools Path",
+                path
+        ).showAndWait().ifPresent(s -> putPref(SDK_BUILD_TOOLS, s));
     }
 
     public void setJDKInstallation(ActionEvent event) {
-        Dialog<String> setJDKDialog = new Dialog<>();
-        setJDKDialog.setTitle("Path Configurations");
-        setJDKDialog.setHeaderText("JDK Installation Path");
+        String path = getPref(JDK_INSTALLATION_PATH);
+        if (path == null || !new File(path).exists()) {
+            path = MiscUtils.getProgramFilesDir() + "/Java";
+            if (!new File(path).exists())
+                path = MiscUtils.getProgramFilesDir();
+        }
 
-        setJDKDialog.getDialogPane().getButtonTypes().addAll(
-                ButtonType.APPLY,
-                ButtonType.CANCEL
-        );
-
-        GridPane grid = new GridPane();
-        grid.setVgap(10);
-        grid.setHgap(10);
-        grid.setPadding(new Insets(30, 150, 10, 10));
-
-        TextField jdkPath = new TextField();
-        jdkPath.setPromptText("JDK Installation Path");
-        String jdkPref = getPref(JDK_INSTALLATION_PATH);
-        if (jdkPref != null && new File(jdkPref).exists())
-            jdkPath.setText(getPref(JDK_INSTALLATION_PATH));
-        Button jdkButtonChooser = new Button("Browse...");
-        jdkButtonChooser.setOnAction((value) -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Example Folder: C:\\Program Files\\Java\\jdk1.8.0_172\n\nPlease use JDK 1.8.0 for Android Development. This Path will be used to find the jarsigner.exe in /bin of this Folder.");
-            alert.setOnCloseRequest((dialogEvent) -> {
-                DirectoryChooser directoryChooser = new DirectoryChooser();
-                if (jdkPref != null && new File(jdkPref).exists()) {
-                    directoryChooser.setInitialDirectory(new File(jdkPref));
-                } else {
-                    String programFiles = MiscUtils.getProgramFilesDir();
-                    if (programFiles != null && !programFiles.trim().isEmpty()) {
-                        File java = new File(programFiles + "/Java");
-                        if (java.exists())
-                            directoryChooser.setInitialDirectory(java);
-                        else
-                            directoryChooser.setInitialDirectory(new File(programFiles));
-                    }
-                }
-                File result = directoryChooser.showDialog(Main.getStage());
-                if (result != null)
-                    jdkPath.setText(result.getAbsolutePath());
-                alert.close();
-            });
-            alert.show();
-        });
-
-        grid.add(new Label("JDK Installation Path"), 0, 0);
-        grid.add(jdkPath, 1, 0);
-        grid.add(jdkButtonChooser, 2, 0);
-
-        setJDKDialog.getDialogPane().setContent(grid);
-
-        Platform.runLater(jdkPath::requestFocus);
-
-        setJDKDialog.setResultConverter(param -> {
-            if (param == ButtonType.APPLY
-                    && !jdkPath.getText().trim().isEmpty()) {
-                return jdkPath.getText().trim();
-            }
-            return null;
-        });
-
-        Optional<String> result = setJDKDialog.showAndWait();
-
-        result.ifPresent(string ->
-                putPref(JDK_INSTALLATION_PATH, result.get()));
+        getDirSelectorDialog(
+                "Path Configurations",
+                "JDK Installation Path",
+                "Example Folder: C:\\Program Files\\Java\\jdk1.8.0_172\n\nPlease use JDK 1.8.0 for Android Development. This Path will be used to find the jarsigner.exe in /bin of this Folder.",
+                "JDK Installation Path",
+                path
+        ).showAndWait().ifPresent(s -> putPref(JDK_INSTALLATION_PATH, s));
     }
 
     public void saveSavedConfig(ActionEvent event) {
