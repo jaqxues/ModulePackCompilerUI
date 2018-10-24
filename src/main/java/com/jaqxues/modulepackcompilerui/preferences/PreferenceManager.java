@@ -62,8 +62,9 @@ public class PreferenceManager {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static void generateFile() throws IOException {
-        //noinspection ResultOfMethodCallIgnored
+        preferencesFile.getParentFile().mkdirs();
         preferencesFile.createNewFile();
         FileWriter writer = new FileWriter(preferencesFile);
         writer.write("{}");
@@ -97,7 +98,7 @@ public class PreferenceManager {
         }
     }
 
-    @SuppressWarnings("UnusedReturnValue")
+    @SuppressWarnings({"UnusedReturnValue", "unchecked"})
     public static <T> T addToCollection(PreferencesDef pref, T value) {
         ((Collection<T>) getPref(pref)).add(value);
         saveMap();
@@ -105,9 +106,15 @@ public class PreferenceManager {
     }
 
     public static <T> T removeFromCollection(PreferencesDef pref, T value) {
-        ((Collection<?>) getPref(pref)).remove(value);
+        //noinspection unchecked
+        ((Collection<T>) getPref(pref)).remove(value);
         saveMap();
         return value;
+    }
+
+    public static void clearCollection(PreferencesDef pref) {
+        ((Collection<?>) getPref(pref)).clear();
+        saveMap();
     }
 
     /**

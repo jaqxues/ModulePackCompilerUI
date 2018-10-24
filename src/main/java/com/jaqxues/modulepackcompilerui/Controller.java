@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -45,6 +46,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromCollection;
@@ -501,7 +503,7 @@ public class Controller {
 
     @CheckReturnValue
     private Dialog<String> getDirSelectorDialog(String title, String header, String contentText,
-                                                String pathName, String pathValue, Alert alert) {
+                                                String pathName, @Nullable String pathValue, Alert alert) {
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle(title);
         dialog.setHeaderText(header);
@@ -552,8 +554,8 @@ public class Controller {
 
         dialog.setResultConverter(param -> {
             if (param == ButtonType.APPLY && !textInput.getText().trim().isEmpty()) {
-                String string = textInput.getText().trim();
-                if (!new File(string).exists()) {
+                File file = new File(textInput.getText().trim());
+                if (!file.exists()) {
                     Alert alert1 = new Alert(Alert.AlertType.ERROR);
                     alert1.setTitle(title);
                     alert.setHeaderText("This Path does not exist");
@@ -561,7 +563,7 @@ public class Controller {
                     alert.show();
                     return null;
                 }
-                return string;
+                return file.getAbsolutePath();
             }
             return null;
         });
@@ -598,15 +600,14 @@ public class Controller {
     }
 
     public void setProjectRoot(ActionEvent event) {
-        DirectoryChooser chooser = new DirectoryChooser();
-        File selectedDirectory = chooser.showDialog(Main.getStage());
-        if (selectedDirectory != null) {
-            putPref(PreferencesDef.PROJECT_ROOT, selectedDirectory.getAbsolutePath());
-            return;
-        }
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setContentText("Please Select a Folder to set the Package Root");
-        alert.show();
+        getDirSelectorDialog(
+                "General Settings",
+                "Set Project Root",
+                "You can specify a new Project Root",
+                "Project Root",
+                getPref(PROJECT_ROOT)
+        ).showAndWait().ifPresent(s -> putPref(PROJECT_ROOT, s)
+        );
     }
 
     public void setSources(ActionEvent event) {
@@ -838,22 +839,16 @@ public class Controller {
         SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
 
         if (model.getProjectRoot() == null || !new File(model.getProjectRoot()).exists()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setContentText("Please select a Project Root");
-            alert.setOnCloseRequest(event1 -> {
-                alert.close();
-                DirectoryChooser chooser = new DirectoryChooser();
-                chooser.setTitle("Choose Project Root");
-                File selectedDirectory = chooser.showDialog(Main.getStage());
-                if (selectedDirectory != null) {
-                    model.setProjectRoot(selectedDirectory.getAbsolutePath());
-                    putPref(PROJECT_ROOT, selectedDirectory.getAbsolutePath());
-                } else {
-                    Alert alert1 = new Alert(Alert.AlertType.ERROR);
-                    alert1.setContentText("A Project Root Folder is required");
-                }
+            getDirSelectorDialog(
+                    "Saved Configurations",
+                    "Choose Project Root",
+                    "This Saved Config does not have a valid Project Root. Please specify a new Directory.",
+                    "Project Root",
+                    null
+            ).showAndWait().ifPresent(s -> {
+                model.setProjectRoot(s);
+                putPref(PROJECT_ROOT, model.setProjectRoot(s));
             });
-            alert.show();
         }
         for (String string : PreferenceManager.<List<String>>getPref(ATTRIBUTES))
             attrTable.getItems().remove(string);
@@ -884,6 +879,8 @@ public class Controller {
     }
 
     public void resetCurrentPrefs(ActionEvent event) {
+        attrTable.getItems().clear();
+        clearCollection(ATTRIBUTES);
         // TODO Finish Resetting Current Config
     }
 
