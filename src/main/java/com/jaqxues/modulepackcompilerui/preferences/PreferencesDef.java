@@ -1,7 +1,8 @@
 package com.jaqxues.modulepackcompilerui.preferences;
 
 import com.google.gson.reflect.TypeToken;
-import com.jaqxues.modulepackcompilerui.models.SignConfig;
+import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
+import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -17,10 +18,9 @@ public enum PreferencesDef {
     MODULE_PACKAGE("ModulePackage", String.class, null),
     FILE_SOURCES("FileSources", ArrayList.class, null),
     ADB_PUSH_TOGGLE("AdbPushToggle", Boolean.class, false),
-    ADB_PUSH_PATH("AdbPushPath", String.class, null),
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
     SIGN_PACK("SignPack", Boolean.class, true),
-    SIGN_CONFIGS("SingConfigs", new TypeToken<List<SignConfig>>() {}.getType(), new ArrayList<SignConfig>()),
+    SIGN_CONFIGS("SingConfigs", new TypeToken<List<SignConfigModel>>() {}.getType(), new ArrayList<SignConfigModel>()),
     SDK_BUILD_TOOLS("SdkBuildTools", String.class, null),
     JDK_INSTALLATION_PATH("JDKInstallation", String.class, null);
 

@@ -31,8 +31,8 @@ public class SavedConfigModel {
     public String savedConfigNotices;
     @SerializedName("SavedConfigDate")
     public long savedConfigDate;
-    @SerializedName("SignConfig")
-    public SignConfig signConfig;
+    @SerializedName("SignConfigModel")
+    public SignConfigModel signConfig;
     @SerializedName("ProjectRoot")
     public String projectRoot;
     @SerializedName("ModulePackage")
@@ -46,7 +46,7 @@ public class SavedConfigModel {
     /**
      *
      * @param model
-     * @return True if the SignConfig has been added to the Saved Configs, False if the name already existed
+     * @return True if the SignConfigModel has been added to the Saved Configs, False if the name already existed
      */
     public static boolean addConfig(SavedConfigModel model) {
         JsonArray object = getConfigJson();
@@ -169,11 +169,11 @@ public class SavedConfigModel {
         return this;
     }
 
-    public SignConfig getSignConfig() {
+    public SignConfigModel getSignConfig() {
         return signConfig;
     }
 
-    public SavedConfigModel setSignConfig(SignConfig signConfig) {
+    public SavedConfigModel setSignConfig(SignConfigModel signConfig) {
         this.signConfig = signConfig;
         return this;
     }

@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName;
  * Date: 10.10.2018 - Time 18:24.
  */
 
-public class SignConfig {
+public class SignConfigModel {
 
     @SerializedName("StorePath")
     private String storePath;
@@ -24,7 +24,7 @@ public class SignConfig {
     @SerializedName("IsActive")
     private boolean isActive;
 
-    public SignConfig(String storePath, String storePassword, String keyAlias, String keyPassword) {
+    public SignConfigModel(String storePath, String storePassword, String keyAlias, String keyPassword) {
         this.storePath = storePath;
         this.storePassword = storePassword;
         this.keyAlias = keyAlias;

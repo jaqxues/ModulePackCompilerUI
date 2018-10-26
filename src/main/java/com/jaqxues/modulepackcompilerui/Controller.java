@@ -1,9 +1,10 @@
 package com.jaqxues.modulepackcompilerui;
 
 import com.jaqxues.modulepackcompilerui.models.SavedConfigModel;
-import com.jaqxues.modulepackcompilerui.models.SignConfig;
+import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
+import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
-import com.jaqxues.modulepackcompilerui.preferences.PreferencesDef;
+import com.jaqxues.modulepackcompilerui.utils.AdbUtils;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 import com.jaqxues.modulepackcompilerui.utils.MiscUtils;
 import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
@@ -16,7 +17,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -44,6 +44,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import se.vidstige.jadb.JadbDevice;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearCollection;
@@ -51,7 +52,6 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.get
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.togglePref;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ATTRIBUTES;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.FILE_SOURCES;
@@ -83,15 +83,15 @@ public class Controller {
     @FXML
     private CheckBox toggleSignPack;
     @FXML
-    private TableView<SignConfig> keyTable;
+    private TableView<SignConfigModel> keyTable;
     @FXML
-    private TableColumn<SignConfig, String> storePathCol;
+    private TableColumn<SignConfigModel, String> storePathCol;
     @FXML
-    private TableColumn<SignConfig, String> storePasswordCol;
+    private TableColumn<SignConfigModel, String> storePasswordCol;
     @FXML
-    private TableColumn<SignConfig, String> keyAliasCol;
+    private TableColumn<SignConfigModel, String> keyAliasCol;
     @FXML
-    private TableColumn<SignConfig, String> keyPasswordCol;
+    private TableColumn<SignConfigModel, String> keyPasswordCol;
     @FXML
     private Button keyEditConfigBtn;
     @FXML
@@ -125,6 +125,18 @@ public class Controller {
     // ============================================================================================
     // INITIALIZATION METHODS
     // ============================================================================================
+
+    @CheckReturnValue
+    private static DirectoryChooser getDirChooser(String title, @Nullable String initial) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(title);
+        if (initial != null) {
+            File initialDir = new File(initial);
+            if (initialDir.exists())
+                chooser.setInitialDirectory(initialDir);
+        }
+        return chooser;
+    }
 
     public void initialize() {
         initAttributes();
@@ -167,9 +179,9 @@ public class Controller {
                 new SimpleStringProperty(value.getValue().getKeyPassword())
         );
 
-        keyTable.setRowFactory(tv -> new TableRow<SignConfig>() {
+        keyTable.setRowFactory(tv -> new TableRow<SignConfigModel>() {
             @Override
-            protected void updateItem(SignConfig item, boolean empty) {
+            protected void updateItem(SignConfigModel item, boolean empty) {
                 super.updateItem(item, empty);
                 if (item != null && item.isActivated()) {
                     setStyle("-fx-background-color: lightgreen");
@@ -183,7 +195,7 @@ public class Controller {
             }
         });
 
-        List<SignConfig> configs = getPref(SIGN_CONFIGS);
+        List<SignConfigModel> configs = getPref(SIGN_CONFIGS);
         keyTable.getItems().addAll(configs);
 
         int[] selectedConfigs = {0};
@@ -238,16 +250,16 @@ public class Controller {
         });
     }
 
+    // ============================================================================================
+    // DIALOGS AND SIMILAR UI COMPONENTS
+    // ============================================================================================
+
     private void initAdbPush() {
         boolean adbPush = getPref(ADB_PUSH_TOGGLE);
         adbPushToggle.setSelected(adbPush);
         adbPushSettings.setDisable(!adbPush);
         // TODO JADB IMPLEMENTATION
     }
-
-    // ============================================================================================
-    // DIALOGS AND SIMILAR UI COMPONENTS
-    // ============================================================================================
 
     private void attrInputDialog(@Nullable String string) {
         boolean edit = string != null;
@@ -309,10 +321,10 @@ public class Controller {
         });
     }
 
-    private void keyInputDialog(@Nullable SignConfig oldConfig) {
+    private void keyInputDialog(@Nullable SignConfigModel oldConfig) {
         boolean edit = oldConfig != null;
 
-        Dialog<SignConfig> dialog = new Dialog<>();
+        Dialog<SignConfigModel> dialog = new Dialog<>();
         if (edit) {
             dialog.setTitle("Edit Key Configuration");
             dialog.setHeaderText("Edit the Keys configuration");
@@ -378,7 +390,7 @@ public class Controller {
                     && !storePassword.getText().trim().isEmpty()
                     && !keyAlias.getText().trim().isEmpty()
                     && !keyPassword.getText().trim().isEmpty()) {
-                return new SignConfig(
+                return new SignConfigModel(
                         storePath.getText().trim(),
                         storePassword.getText().trim(),
                         keyAlias.getText().trim(),
@@ -387,7 +399,7 @@ public class Controller {
             return null;
         });
 
-        Optional<SignConfig> result = dialog.showAndWait();
+        Optional<SignConfigModel> result = dialog.showAndWait();
 
         result.ifPresent(signConfig -> {
             if (!new File(signConfig.getStorePath()).exists()) {
@@ -454,7 +466,7 @@ public class Controller {
                     return savedConfigModel.setSavedConfigName(name.getText().trim())
                             .setSavedConfigNotices(name.getText().trim())
                             .setSavedConfigDate(System.currentTimeMillis());
-                SignConfig[] signConfigs = new SignConfig[1];
+                SignConfigModel[] signConfigs = new SignConfigModel[1];
                 keyTable.getItems().forEach(signConfig -> {
                     if (signConfig.isActivated())
                         signConfigs[0] = signConfig;
@@ -536,20 +548,20 @@ public class Controller {
         });
 
 
-        GridPane gridPane = new GridPane();
-        gridPane.setPadding(new Insets(30, 10, 30, 10));
-        gridPane.setHgap(10d);
-        gridPane.setVgap(10d);
-        gridPane.add(new Label(pathName), 0, 0);
-        gridPane.add(textInput, 1, 0);
-        gridPane.add(pathBtn, 2, 0);
-        dialog.getDialogPane().setContent(gridPane);
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(30, 10, 30, 10));
+        grid.setHgap(10d);
+        grid.setVgap(10d);
+        grid.add(new Label(pathName), 0, 0);
+        grid.add(textInput, 1, 0);
+        grid.add(pathBtn, 2, 0);
+        dialog.getDialogPane().setContent(grid);
 
         Platform.runLater(textInput::requestFocus);
 
         if (contentText != null) {
             Label textContent = new Label(contentText);
-            gridPane.add(textContent, 0, 1, 3, 1);
+            grid.add(textContent, 0, 1, 3, 1);
         }
 
         dialog.setResultConverter(param -> {
@@ -570,16 +582,38 @@ public class Controller {
         return dialog;
     }
 
-    @CheckReturnValue
-    private static DirectoryChooser getDirChooser(String title, @Nullable String initial) {
-        DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle(title);
-        if (initial != null) {
-            File initialDir = new File(initial);
-            if (initialDir.exists())
-                chooser.setInitialDirectory(initialDir);
-        }
-        return chooser;
+    private void jadbDialog() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("General Settings");
+        dialog.setHeaderText("Adb Settings");
+
+        dialog.getDialogPane().getButtonTypes().addAll(
+                ButtonType.APPLY,
+                ButtonType.CANCEL
+        );
+
+        TableView<VirtualAdbDeviceModel> tableView = new TableView<>();
+        TableColumn<VirtualAdbDeviceModel, String> deviceName = new TableColumn<>();
+        deviceName.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().toString())
+        );
+        TableColumn<VirtualAdbDeviceModel, String> pushPath = new TableColumn<>();
+        pushPath.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().toString())
+        );
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableView.getColumns().add(deviceName);
+        tableView.getColumns().add(pushPath);
+
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(30, 10, 30, 10));
+        grid.add(tableView, 0, 0);
+
+        dialog.getDialogPane().setContent(grid);
+
+        new Thread(() -> tableView.getItems().addAll(AdbUtils.getDevices())).start();
+
+        dialog.show();
     }
 
     // ============================================================================================
@@ -885,16 +919,7 @@ public class Controller {
     }
 
     public void adbPushSettings(ActionEvent event) {
-        // TODO Add Dialog if multiple Devices etc
-        TextInputDialog inputDialog = new TextInputDialog();
-        inputDialog.setTitle("ADB Push Path");
-        inputDialog.setHeaderText("Set ADB Push Path for your phone");
-        if (getPref(ADB_PUSH_PATH) != null)
-            inputDialog.getEditor().setText(getPref(ADB_PUSH_PATH));
-        inputDialog.getEditor().setPrefWidth(400d);
-        inputDialog.getEditor().setPromptText("ADB Push Path");
-        inputDialog.setContentText("The Adb Push Path defines where the Packs are pushed to on your phone.\nUsually /sdcard/SnapTools/ModulePacks/");
-        inputDialog.showAndWait().ifPresent(s -> putPref(ADB_PUSH_PATH, s));
+        jadbDialog();
     }
 
     public void adbPushToggle(ActionEvent event) {

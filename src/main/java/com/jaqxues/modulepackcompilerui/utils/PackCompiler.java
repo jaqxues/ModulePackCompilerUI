@@ -2,7 +2,8 @@ package com.jaqxues.modulepackcompilerui.utils;
 
 import com.jaqxues.modulepackcompilerui.exceptions.CMDException;
 import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
-import com.jaqxues.modulepackcompilerui.models.SignConfig;
+import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
+import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -15,15 +16,18 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import javafx.concurrent.Task;
+import javafx.scene.control.Alert;
+import se.vidstige.jadb.JadbDevice;
+import se.vidstige.jadb.RemoteFile;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_PATH;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
@@ -36,15 +40,17 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BU
 public class PackCompiler extends Task<File> {
     private File[] sources;
     private String[] attributes;
+    private VirtualAdbDeviceModel[] jadbDevices;
     private File jarTarget;
-    private SignConfig signConfig;
+    private SignConfigModel signConfig;
     private File currentPath = new File("Files/Process");
     private File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
     private File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
 
-    private PackCompiler(File[] sources, String[] attributes, File jarTarget, SignConfig signConfig) {
+    private PackCompiler(File[] sources, String[] attributes, VirtualAdbDeviceModel[] jadbDevices, File jarTarget, SignConfigModel signConfig) {
         this.sources = sources;
         this.attributes = attributes;
+        this.jadbDevices = jadbDevices;
         this.jarTarget = jarTarget;
         this.signConfig = signConfig;
     }
@@ -105,14 +111,57 @@ public class PackCompiler extends Task<File> {
         }
     }
 
-    private static void adbPush(File file) throws Exception {
-        if (getPref(ADB_PUSH_TOGGLE)) {
-//            cmdProcess("adb");
-//            JadbConnection jadb = new JadbConnection();
-//            List<JadbDevice> devices = jadb.getDevices();
-            // TODO JADB Implementation
-            cmdProcess("adb push " + file.getAbsolutePath() + ".jar " + getPref(ADB_PUSH_PATH) + file.getName() + ".jar");
+    /**
+     * Handles pushing the ModulePack via ADB to the Adb Device (using Jadb)
+     *
+     * @param file The file that should be pushed
+     * @param vAdbDevs The devices that the file should be pushed to
+     * @return A bundled List of all Exceptions that occurred as the program should still try to copy the Files to the other devices.
+     */
+    private static List<Exception> adbPush(File file, VirtualAdbDeviceModel[] vAdbDevs) {
+        List<Exception> exceptions = new ArrayList<>();
+        for (VirtualAdbDeviceModel vAdbDev : vAdbDevs) {
+            if (vAdbDev.isConnected()) {
+                JadbDevice jadbDevice = vAdbDev.getDevice();
+                try {
+                    jadbDevice.push(file, new RemoteFile(vAdbDev.getPushPath() + file.getName()));
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
+            }
         }
+        return exceptions;
+    }
+
+    /**
+     * Copy from the SnapTools Project
+     * ===========================================================================
+     * A utility method to generalise filename generation instead of having
+     * duplicate code throughout the project.
+     * ===========================================================================
+     *
+     * @return A string that can be used to determine the filename of a ModulePack
+     * based on some MetaData
+     */
+    public static String getSTFileNameFromTemplate(String type, String scVersion, String flavour, @Nullable String packVersion) {
+        return "STModulePack"
+                + (!"prod".equals(flavour) ? getFlavourText(flavour) : "")
+                + (packVersion == null ? "" : "_" + packVersion)
+                + "_" + type
+                + "_" + scVersion;
+    }
+
+    public static String getFlavourText(String flavour) {
+        if (flavour != null) {
+            switch (flavour.toLowerCase()) {
+                case "beta":
+                    return "Beta";
+                case "prod":
+                    return "Release";
+            }
+        }
+        LogUtils.getLogger().error("Unable to get FlavourText", new Exception("Unknown Flavour: " + flavour));
+        return flavour;
     }
 
     /**
@@ -173,7 +222,17 @@ public class PackCompiler extends Task<File> {
         if (signConfig != null)
             signOutput();
 
-        adbPush(jarTarget);
+        if (getPref(ADB_PUSH_TOGGLE)) {
+            List<Exception> exceptions = adbPush(jarTarget, jadbDevices);
+            if (exceptions.size() > 0) {
+                LogUtils.getLogger().error("One or more errors while pushing the Files to the Adb Device.", Arrays.deepToString(exceptions.toArray()));
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Adb Push");
+                alert.setHeaderText("Error while pushing the File to an ADB Device");
+                alert.setContentText("One or more Errors while pushing the files to the device.");
+                alert.show();
+            }
+        }
     }
 
     private String[] getCommands(File manifest) {
@@ -208,42 +267,12 @@ public class PackCompiler extends Task<File> {
         return null;
     }
 
-    /**
-     * Copy from the SnapTools Project
-     * ===========================================================================
-     * A utility method to generalise filename generation instead of having
-     * duplicate code throughout the project.
-     * ===========================================================================
-     *
-     * @return A string that can be used to determine the filename of a ModulePack
-     * based on some MetaData
-     */
-    public static String getSTFileNameFromTemplate(String type, String scVersion, String flavour, @Nullable String packVersion) {
-        return "STModulePack"
-                + (!"prod".equals(flavour) ? getFlavourText(flavour) : "")
-                + (packVersion == null ? "" : "_" + packVersion)
-                + "_" + type
-                + "_" + scVersion;
-    }
-
-    public static String getFlavourText(String flavour) {
-        if (flavour != null) {
-            switch (flavour.toLowerCase()) {
-                case "beta":
-                    return "Beta";
-                case "prod":
-                    return "Release";
-            }
-        }
-        LogUtils.getLogger().error("Unable to get FlavourText", new Exception("Unknown Flavour: " + flavour));
-        return flavour;
-    }
-
     public static class Builder {
         private List<File> sources;
         private List<String> attributes;
         private File jarTarget;
-        private SignConfig signConfig;
+        private SignConfigModel signConfig;
+        private List<VirtualAdbDeviceModel> vAdbDevices;
 
         public List<File> getSources() {
             return sources;
@@ -272,12 +301,21 @@ public class PackCompiler extends Task<File> {
             return this;
         }
 
-        public SignConfig getSignConfig() {
+        public SignConfigModel getSignConfig() {
             return signConfig;
         }
 
-        public Builder setSignConfig(SignConfig signConfig) {
+        public Builder setSignConfig(SignConfigModel signConfig) {
             this.signConfig = signConfig;
+            return this;
+        }
+
+        public List<VirtualAdbDeviceModel> getVirtualAdbDevices() {
+            return vAdbDevices;
+        }
+
+        public Builder setVirtualAdbDevices(List<VirtualAdbDeviceModel> vAdbDevices) {
+            this.vAdbDevices = vAdbDevices;
             return this;
         }
 
@@ -291,7 +329,7 @@ public class PackCompiler extends Task<File> {
             if (jarTarget == null) {
                 throw new IllegalArgumentException("No Jar Target Provided");
             }
-            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), jarTarget, signConfig);
+            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), vAdbDevices.toArray(new VirtualAdbDeviceModel[0]), jarTarget, signConfig);
         }
     }
 }
