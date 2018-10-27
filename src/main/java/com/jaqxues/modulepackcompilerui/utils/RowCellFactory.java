@@ -1,5 +1,6 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TableRow;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
@@ -10,11 +11,32 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.DARK_T
  * Date: 26.10.2018 - Time 23:50.
  */
 
-public class TableRowFactory {
+public class RowCellFactory {
+
+    public static <T extends ActiveStateManager> ListCell<T> getBooleanPairListCell() {
+        return new ListCell<T>() {
+            private String getColor(boolean selected) {
+                if (selected)
+                    return getPref(DARK_THEME) ? "darkgreen" : "green";
+                return getPref(DARK_THEME) ? "green" : "lightgreen";
+            }
+
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                if (!empty)
+                    setText(item.toString());
+                if (!empty && item.active()) {
+                    setStyle("-fx-background-color: " + getColor(false));
+                    selectedProperty().addListener((observable, oldValue, newValue) -> setStyle("-fx-background-color: " + getColor(newValue)));
+                }
+            }
+        };
+    }
 
     public static <T extends ActiveStateManager> TableRow<T> getAStateTableRow() {
         return new TableRow<T>() {
-            private final String getColor(boolean selected) {
+            private String getColor(boolean selected) {
                 if (selected)
                     return getPref(DARK_THEME) ? "darkgreen" : "green";
                 return getPref(DARK_THEME) ? "green" : "lightgreen";
@@ -22,7 +44,7 @@ public class TableRowFactory {
             @Override
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
-                if (item != null && item.active()) {
+                if (!empty && item.active()) {
                     setStyle("-fx-background-color: " + getColor(false));
                     selectedProperty().addListener((observable, oldValue, newValue) -> setStyle("-fx-background-color: " + getColor(newValue)));
                 }
@@ -45,7 +67,7 @@ public class TableRowFactory {
             @Override
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
-                if (item == null || item.tableRowColor() == 0)
+                if (empty || item.tableRowColor() == 0)
                     return;
                 switch (item.tableRowColor()) {
                     case 3:

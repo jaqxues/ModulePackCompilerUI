@@ -2,7 +2,7 @@ package com.jaqxues.modulepackcompilerui.models;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.SerializedName;
-import com.jaqxues.modulepackcompilerui.utils.TableRowFactory;
+import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
 import se.vidstige.jadb.JadbDevice;
 
@@ -11,7 +11,7 @@ import se.vidstige.jadb.JadbDevice;
  * Date: 26.10.2018 - Time 17:18.
  */
 
-public class VirtualAdbDeviceModel implements TableRowFactory.ColorStateManager {
+public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
 
     public static final String PUSH_PATH_DEFAULT = "/sdcard/ModulePack/";
     @SerializedName("Name")

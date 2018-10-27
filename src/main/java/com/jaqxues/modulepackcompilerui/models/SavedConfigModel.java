@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
+import com.jaqxues.modulepackcompilerui.utils.BooleanPair;
 import com.jaqxues.modulepackcompilerui.utils.GsonSingleton;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 
@@ -15,6 +16,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
+import javafx.util.Pair;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -38,13 +41,12 @@ public class SavedConfigModel {
     @SerializedName("ModulePackage")
     public String modulePackage;
     @SerializedName("ModuleSources")
-    public List<String> moduleSources;
+    public List<BooleanPair<String>> moduleSources;
     @SerializedName("Attributes")
     public List<String> attributes;
 
 
     /**
-     *
      * @param model
      * @return True if the SignConfigModel has been added to the Saved Configs, False if the name already existed
      */
@@ -89,10 +91,11 @@ public class SavedConfigModel {
                             ))
                             .setSavedConfigDate(System.currentTimeMillis())
                             .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
-                            .setModuleSources(Arrays.asList(
-                            "/app/build/intermediates/transforms/desugar/pack/release/0/",
-                            "/app/build/tmp/kotlin-classes/packRelease/"
-                    ))
+                            .setModuleSources(
+                                    Arrays.asList(
+                                            new BooleanPair<>("/app/build/intermediates/transforms/desugar/pack/release/0/", true),
+                                            new BooleanPair<>("/app/build/tmp/kotlin-classes/packRelease/", true)
+                            ))
             };
             saveJson(GsonSingleton.getSingleton().toJsonTree(savedConfigModels));
             return savedConfigModels;
@@ -196,11 +199,11 @@ public class SavedConfigModel {
         return this;
     }
 
-    public List<String> getModuleSources() {
+    public List<BooleanPair<String>> getModuleSources() {
         return moduleSources;
     }
 
-    public SavedConfigModel setModuleSources(List<String> moduleSources) {
+    public SavedConfigModel setModuleSources(List<BooleanPair<String>> moduleSources) {
         this.moduleSources = moduleSources;
         return this;
     }

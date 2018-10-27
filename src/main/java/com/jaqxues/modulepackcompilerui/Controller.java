@@ -5,10 +5,11 @@ import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
 import com.jaqxues.modulepackcompilerui.utils.AdbUtils;
+import com.jaqxues.modulepackcompilerui.utils.BooleanPair;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 import com.jaqxues.modulepackcompilerui.utils.MiscUtils;
 import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
-import com.jaqxues.modulepackcompilerui.utils.TableRowFactory;
+import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -192,7 +193,7 @@ public class Controller {
                 new SimpleStringProperty(value.getValue().getKeyPassword())
         );
 
-        keyTable.setRowFactory(tv -> TableRowFactory.getAStateTableRow());
+        keyTable.setRowFactory(tv -> RowCellFactory.getAStateTableRow());
 
         List<SignConfigModel> configs = getPref(SIGN_CONFIGS);
         keyTable.getItems().addAll(configs);
@@ -320,13 +321,13 @@ public class Controller {
                     );
                     return null;
                 }
-                boolean[] found = {false};
+                boolean found = false;
                 //noinspection unchecked
-                ((List<String>) getPref(ATTRIBUTES)).forEach(s -> {
-                    if (nameTxt.equals(s.split("=", 2)[0]))
-                        found[0] = true;
-                });
-                if (!found[0])
+                for (String s : (List<String>) getPref(ATTRIBUTES))
+                    if (nameTxt.equals(s.split("=", 2)[0]) && !(edit && string.equals(s)))
+                        found = true;
+
+                if (!found)
                     return nameTxt + "=" + value.getText().trim();
                 MiscUtils.showAlert(
                         Alert.AlertType.INFORMATION,
@@ -420,8 +421,9 @@ public class Controller {
         Platform.runLater(storePath::requestFocus);
 
         dialog.setResultConverter(param -> {
-            if (param == ButtonType.APPLY
-                    && !storePath.getText().trim().isEmpty()
+            if (param != ButtonType.APPLY)
+                return null;
+            if (!storePath.getText().trim().isEmpty()
                     && !storePassword.getText().trim().isEmpty()
                     && !keyAlias.getText().trim().isEmpty()
                     && !keyPassword.getText().trim().isEmpty()) {
@@ -512,27 +514,22 @@ public class Controller {
         Platform.runLater(name::requestFocus);
 
         dialog.setResultConverter(param -> {
-            if (param == ButtonType.CANCEL)
+            if (param != ButtonType.APPLY)
                 return null;
             if (!name.getText().trim().isEmpty()) {
                 if (edit)
                     return savedConfigModel.setSavedConfigName(name.getText().trim())
-                            .setSavedConfigNotices(name.getText().trim())
+                            .setSavedConfigNotices(notice.getText().trim())
                             .setSavedConfigDate(System.currentTimeMillis());
-                SignConfigModel[] signConfigs = new SignConfigModel[1];
-                keyTable.getItems().forEach(signConfig -> {
-                    if (signConfig.active())
-                        signConfigs[0] = signConfig;
-                });
-                // TOdo disabled
+                SignConfigModel signConfig = getActiveSigning();
                 return new SavedConfigModel().setSavedConfigName(name.getText().trim())
-                        .setSavedConfigNotices(name.getText().trim())
+                        .setSavedConfigNotices(notice.getText().trim())
                         .setSavedConfigDate(System.currentTimeMillis())
                         .setProjectRoot(getPref(PROJECT_ROOT))
                         .setModulePackage(getPref(MODULE_PACKAGE))
                         .setModuleSources(getPref(FILE_SOURCES))
                         .setAttributes(attrTable.getItems())
-                        .setSignConfig(signConfigs[0]);
+                        .setSignConfig(signConfig);
             }
             MiscUtils.showAlert(
                     Alert.AlertType.ERROR,
@@ -543,15 +540,14 @@ public class Controller {
             return null;
         });
 
-        Optional<SavedConfigModel> result = dialog.showAndWait();
-
-        result.ifPresent(savedConfigModel1 -> {
+        dialog.showAndWait().ifPresent(savedConfigModel1 -> {
             if (edit) {
                 savedConfigTable.getItems().remove(savedConfigModel);
                 SavedConfigModel.removeConfig(savedConfigModel);
             }
             if (!SavedConfigModel.addConfig(savedConfigModel1)) {
-                MiscUtils.showAlert(Alert.AlertType.ERROR,
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
                         "Duplicate Detected",
                         "Unable to save Configuration",
                         "A Saved Configuration with the same Name already exists, please chose a new name or delete the old Configuration."
@@ -660,7 +656,7 @@ public class Controller {
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tableView.getColumns().add(deviceName);
         tableView.getColumns().add(pushPath);
-        tableView.setRowFactory(tv -> TableRowFactory.getCStateTableRow());
+        tableView.setRowFactory(tv -> RowCellFactory.getCStateTableRow());
 
         ButtonBar buttonBar = new ButtonBar();
         buttonBar.getButtons().addAll(
@@ -750,7 +746,7 @@ public class Controller {
         }
         File projectRootFile = new File(projectRoot);
 
-        Dialog<List<String>> dialog = new Dialog<>();
+        Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Manual Project Sources");
         dialog.setHeaderText("Manually set project sources");
 
@@ -759,21 +755,27 @@ public class Controller {
                         ButtonType.CANCEL
                 );
 
-        ListView<String> listView = new ListView<>();
+        ListView<BooleanPair<String>> listView = new ListView<>();
         //noinspection unchecked
-        listView.getItems().addAll((List<String>) getPref(FILE_SOURCES));
+        listView.getItems().addAll((List<BooleanPair<String>>) getPref(FILE_SOURCES));
         listView.setPadding(new Insets(10));
+        listView.setCellFactory(param -> RowCellFactory.getBooleanPairListCell());
 
         ButtonBar buttonBar = new ButtonBar();
         buttonBar.getButtons().addAll(
                 new Button("New..."),
                 new Button("Edit"),
-                new Button("Remove")
+                new Button("Remove"),
+                new Button("Activate")
         );
         MiscUtils.temporaryDisable(
                 listView.getSelectionModel().selectedItemProperty(),
                 buttonBar.getButtons().get(1),
-                buttonBar.getButtons().get(2)
+                buttonBar.getButtons().get(2),
+                buttonBar.getButtons().get(3)
+        );
+        listView.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> ((Button) buttonBar.getButtons().get(3)).setText(newValue.getValue() ? "Disable" : "Activate")
         );
         buttonBar.setPadding(new Insets(10));
 
@@ -792,16 +794,16 @@ public class Controller {
                 return;
             }
 
-            String relativized = File.separator + projectRootFile.toPath().relativize(selected.toPath()).toString() + File.separator;
-            LogUtils.getLogger().debug("Relativized Path: " + relativized);
-            addToCollection(FILE_SOURCES, relativized);
-            listView.getItems().add(relativized);
+            BooleanPair<String> pair = new BooleanPair<>(File.separator + projectRootFile.toPath().relativize(selected.toPath()).toString() + File.separator, true);
+            LogUtils.getLogger().debug("Relativized Path: " + pair.getKey());
+            addToCollection(FILE_SOURCES, pair);
+            listView.getItems().add(pair);
         });
         buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event12 -> {
-            String selected = listView.getSelectionModel().getSelectedItem();
+            BooleanPair<String> selected = listView.getSelectionModel().getSelectedItem();
 
             DirectoryChooser chooser = new DirectoryChooser();
-            chooser.setInitialDirectory(new File(projectRootFile, selected));
+            chooser.setInitialDirectory(new File(projectRootFile, selected.getKey()));
             chooser.setTitle("Manual Project Sources");
             File chosenDir = chooser.showDialog(Main.getStage());
             if (chosenDir == null) {
@@ -817,13 +819,13 @@ public class Controller {
             listView.getItems().remove(selected);
             removeFromCollection(FILE_SOURCES, selected);
 
-            String relativized = File.separator + projectRootFile.toPath().relativize(chosenDir.toPath()).toString() + File.separator;
-            LogUtils.getLogger().debug("Relativized Path: " + relativized);
+            BooleanPair<String> relativized = new BooleanPair<>(File.separator + projectRootFile.toPath().relativize(chosenDir.toPath()).toString() + File.separator, true);
+            LogUtils.getLogger().debug("Relativized Path: " + relativized.getKey());
             addToCollection(FILE_SOURCES, relativized);
             listView.getItems().add(relativized);
         });
         buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event13 -> {
-            String selected = listView.getSelectionModel().getSelectedItem();
+            BooleanPair<String> selected = listView.getSelectionModel().getSelectedItem();
             listView.getItems().remove(selected);
             removeFromCollection(FILE_SOURCES, selected);
         });
@@ -889,8 +891,9 @@ public class Controller {
 //                                + "/app/build/tmp/kotlin-classes/packRelease/"
 
         //noinspection unchecked
-        for (String string : (ArrayList<String>) getPref(FILE_SOURCES)) {
-            sources.add(new File(getPref(PROJECT_ROOT) + string + MiscUtils.getMPFolder()));
+        for (BooleanPair<String> source : (List<BooleanPair<String>>) getPref(FILE_SOURCES)) {
+            if (source.getValue()) 
+                sources.add(new File(getPref(PROJECT_ROOT) + source.getKey() + MiscUtils.getMPFolder()));
         }
 
         try {

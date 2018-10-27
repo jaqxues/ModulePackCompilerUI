@@ -1,14 +1,14 @@
 package com.jaqxues.modulepackcompilerui.models;
 
 import com.google.gson.annotations.SerializedName;
-import com.jaqxues.modulepackcompilerui.utils.TableRowFactory;
+import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
  * Date: 10.10.2018 - Time 18:24.
  */
 
-public class SignConfigModel implements TableRowFactory.ActiveStateManager {
+public class SignConfigModel implements RowCellFactory.ActiveStateManager {
 
     @SerializedName("StorePath")
     private String storePath;

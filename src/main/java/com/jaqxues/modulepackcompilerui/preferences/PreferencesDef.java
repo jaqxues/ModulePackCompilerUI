@@ -3,10 +3,13 @@ package com.jaqxues.modulepackcompilerui.preferences;
 import com.google.gson.reflect.TypeToken;
 import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
+import com.jaqxues.modulepackcompilerui.utils.BooleanPair;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+
+import javafx.util.Pair;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -17,7 +20,7 @@ public enum PreferencesDef {
     DARK_THEME("DarkTheme", Boolean.class, false),
     PROJECT_ROOT("ProjectRoot", String.class, null),
     MODULE_PACKAGE("ModulePackage", String.class, null),
-    FILE_SOURCES("FileSources", ArrayList.class, null),
+    FILE_SOURCES("FileSources", new TypeToken<List<BooleanPair<String>>>() {}.getType(), null),
     ADB_PUSH_TOGGLE("AdbPushToggle", Boolean.class, false),
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
     SIGN_PACK("SignPack", Boolean.class, true),
