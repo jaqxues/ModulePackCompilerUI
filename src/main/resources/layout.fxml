@@ -90,7 +90,7 @@
             </TitledPane>
          </children>
       </AnchorPane>
-      <AnchorPane GridPane.rowIndex="1">
+      <AnchorPane fx:id="keyContainer" GridPane.rowIndex="1">
          <children>
             <TitledPane animated="false" collapsible="false" text="Signing" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                <content>

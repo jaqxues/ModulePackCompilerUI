@@ -226,11 +226,12 @@ public class PackCompiler extends Task<File> {
             List<Exception> exceptions = adbPush(jarTarget, jadbDevices);
             if (exceptions.size() > 0) {
                 LogUtils.getLogger().error("One or more errors while pushing the Files to the Adb Device.", Arrays.deepToString(exceptions.toArray()));
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Adb Push");
-                alert.setHeaderText("Error while pushing the File to an ADB Device");
-                alert.setContentText("One or more Errors while pushing the files to the device.");
-                alert.show();
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Adb Push",
+                        "Error while pushing the File to an ADB Device",
+                        "One or more Errors while pushing the files to the device."
+                );
             }
         }
     }

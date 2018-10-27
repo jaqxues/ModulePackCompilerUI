@@ -2,7 +2,7 @@ package com.jaqxues.modulepackcompilerui.utils;
 
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 
-import java.net.ConnectException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,37 +24,60 @@ public class AdbUtils {
     private static JadbConnection connection = new JadbConnection();
 
     public static List<VirtualAdbDeviceModel> getDevices() {
-        if (!isInitialized) {
+        init();
+        return adbDevices;
+    }
+
+    public static void init() {
+        if (isInitialized)
+            return;
+        isInitialized = true;
+        LogUtils.getLogger().debug("Starting Adb-Server");
+        if (startServer()) {
+            LogUtils.getLogger().debug("Initializing AdbDevices and Device Watcher");
             bindDevices(getConnectedDevices(), adbDevices);
             setWatcher();
+        } else {
+            MiscUtils.showAlert(
+                    Alert.AlertType.ERROR,
+                    "Adb Settings",
+                    "Check Adb Installation",
+                    "To use the Adb Feature, please check your Adb installation.\n\nThe program was unable to start the Adb server (\"adb start-server\" command)"
+            );
         }
-        isInitialized = true;
-        return adbDevices;
     }
 
     private static List<JadbDevice> getConnectedDevices() {
         try {
             return connection.getDevices();
         } catch (Exception e) {
-            // ConnectException is thrown if no Phone is connected --> can be ignored
-            if (!(e instanceof ConnectException))
-                LogUtils.getLogger().error("Error fetching JadbDevices");
+            LogUtils.getLogger().error(null, e);
         }
         return Collections.emptyList();
     }
 
     private static void setWatcher() {
         try {
+            if (Runtime.getRuntime().exec("adb start-server").waitFor() != 0) {
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Adb Settings",
+                        "Unable to create Device Watcher",
+                        "New Devices will not be detected without the device watcher.\n\nAdb probably won't work for you, please check your Adb Installation"
+                );
+                return;
+            }
             connection.createDeviceWatcher(new DeviceDetectionListener() {
                 @Override
                 public void onDetect(List<JadbDevice> devices) {
                     LogUtils.getLogger().debug("New devices have been detected.", Arrays.deepToString(devices.toArray()));
                     if (bindDevices(devices, adbDevices) > 0) {
-                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("Adb Settings");
-                        alert.setHeaderText("New Device detected");
-                        alert.setContentText("A new Device has been connected to the PC via Adb");
-                        alert.show();
+                        MiscUtils.showAlert(
+                                Alert.AlertType.INFORMATION,
+                                "Adb Settings",
+                                "New Device detected",
+                                "A new Device has been connected to the PC via Adb"
+                        );
                     }
                 }
 
@@ -65,8 +88,14 @@ public class AdbUtils {
             });
             LogUtils.getLogger().debug("Successfully setup device watcher");
         } catch (Exception e) {
+//            if (!(e instanceof ConnectException))
             LogUtils.getLogger().error("Unable to setup device watcher", e);
         }
+    }
+
+    public static List<VirtualAdbDeviceModel> refresh() {
+        isInitialized = false;
+        return getDevices();
     }
 
     /**
@@ -97,5 +126,18 @@ public class AdbUtils {
         return newDevs;
     }
 
-
+    /**
+     * Jadb requires the Adb server to be started before using it. This is just a simple error
+     * handling method to ensure it has been started correctly
+     *
+     * @return True if the server has been started
+     */
+    private static boolean startServer() {
+        try {
+            return Runtime.getRuntime().exec("adb start-server").waitFor() == 0;
+        } catch (IOException | InterruptedException e) {
+            LogUtils.getLogger().error("Unable to start adb server", e);
+        }
+        return false;
+    }
 }

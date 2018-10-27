@@ -8,11 +8,13 @@ import com.jaqxues.modulepackcompilerui.utils.AdbUtils;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 import com.jaqxues.modulepackcompilerui.utils.MiscUtils;
 import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
+import com.jaqxues.modulepackcompilerui.utils.TableRowFactory;
 
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -23,6 +25,7 @@ import javax.annotation.Nullable;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -36,15 +39,15 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import se.vidstige.jadb.JadbDevice;
+import sun.plugin.javascript.navig.Anchor;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearCollection;
@@ -98,6 +101,8 @@ public class Controller {
     private Button keyRemoveConfigBtn;
     @FXML
     private Button selectSignConfigBtn;
+    @FXML
+    private AnchorPane keyContainer;
 
     @FXML
     private TableView<SavedConfigModel> savedConfigTable;
@@ -153,18 +158,18 @@ public class Controller {
 
         //noinspection unchecked
         attrTable.getItems().addAll((List<String>) getPref(ATTRIBUTES));
-
-        attrTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            attrEditBtn.setDisable(false);
-            attrRemoveBtn.setDisable(false);
-        });
+        MiscUtils.temporaryDisable(
+                attrTable.getSelectionModel().selectedItemProperty(),
+                attrEditBtn,
+                attrRemoveBtn
+        );
     }
 
     private void initSigning() {
         boolean selected = getPref(SIGN_PACK);
         toggleSignPack.setSelected(selected);
 
-        keyTable.setDisable(!selected);
+        keyContainer.setDisable(!selected);
 
         storePathCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().getStorePath())
@@ -179,56 +184,44 @@ public class Controller {
                 new SimpleStringProperty(value.getValue().getKeyPassword())
         );
 
-        keyTable.setRowFactory(tv -> new TableRow<SignConfigModel>() {
-            @Override
-            protected void updateItem(SignConfigModel item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item != null && item.isActivated()) {
-                    setStyle("-fx-background-color: lightgreen");
-                    selectedProperty().addListener((observable, oldValue, newValue) -> {
-                        if (newValue)
-                            setStyle("-fx-background-color: green;");
-                        else
-                            setStyle("-fx-background-color: lightgreen;");
-                    });
-                }
-            }
-        });
+        keyTable.setRowFactory(tv -> TableRowFactory.getAStateTableRow());
 
         List<SignConfigModel> configs = getPref(SIGN_CONFIGS);
         keyTable.getItems().addAll(configs);
 
         int[] selectedConfigs = {0};
         configs.forEach(signConfig -> {
-            if (signConfig.isActivated())
+            if (signConfig.active())
                 selectedConfigs[0]++;
         });
         if (selectedConfigs[0] > 1) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Signing Configuration");
-            alert.setHeaderText("Selected more than one Signing Configuration");
-            alert.setContentText("Resetting activated Signing Configurations to avoid Conflicts");
-            alert.show();
+            MiscUtils.showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Signing Configuration",
+                    "Selected more than one Signing Configuration",
+                    "Resetting activated Signing Configurations to avoid Conflicts"
+            );
             configs.forEach(signConfig -> signConfig.setActive(false));
             keyTable.refresh();
         }
 
         selectSignConfigBtn.setText(
-                keyTable.getSelectionModel().getSelectedItem() == null || keyTable.getSelectionModel().getSelectedItem().isActivated() ?
+                keyTable.getSelectionModel().getSelectedItem() == null || keyTable.getSelectionModel().getSelectedItem().active() ?
                         "Activate" :
                         "Disable"
         );
 
-        keyTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            selectSignConfigBtn.setDisable(false);
-            selectSignConfigBtn.setText(
-                    newValue.isActivated() ?
-                            "Disable" :
-                            "Activate"
-            );
-            keyEditConfigBtn.setDisable(false);
-            keyRemoveConfigBtn.setDisable(false);
-        });
+        keyTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> selectSignConfigBtn.setText(
+                newValue.active() ?
+                        "Disable" :
+                        "Activate"
+        ));
+        MiscUtils.temporaryDisable(
+                keyTable.getSelectionModel().selectedItemProperty(),
+                keyEditConfigBtn,
+                keyRemoveConfigBtn,
+                selectSignConfigBtn
+        );
     }
 
     private void initSavedConfig() {
@@ -242,24 +235,26 @@ public class Controller {
         savedConfigTable.getItems().addAll(
                 SavedConfigModel.getConfigs()
         );
+        MiscUtils.temporaryDisable(
+                savedConfigTable.getSelectionModel().selectedItemProperty(),
+                savedEditBtn,
+                savedRemoveBtn,
+                savedRestoreBtn
+        );
+    }
 
-        savedConfigTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            savedEditBtn.setDisable(false);
-            savedRemoveBtn.setDisable(false);
-            savedRestoreBtn.setDisable(false);
-        });
+    private void initAdbPush() {
+        boolean adbPush = getPref(ADB_PUSH_TOGGLE);
+        if (adbPush) {
+            new Thread(AdbUtils::init).start();
+        }
+        adbPushToggle.setSelected(adbPush);
+        adbPushSettings.setDisable(!adbPush);
     }
 
     // ============================================================================================
     // DIALOGS AND SIMILAR UI COMPONENTS
     // ============================================================================================
-
-    private void initAdbPush() {
-        boolean adbPush = getPref(ADB_PUSH_TOGGLE);
-        adbPushToggle.setSelected(adbPush);
-        adbPushSettings.setDisable(!adbPush);
-        // TODO JADB IMPLEMENTATION
-    }
 
     private void attrInputDialog(@Nullable String string) {
         boolean edit = string != null;
@@ -403,11 +398,12 @@ public class Controller {
 
         result.ifPresent(signConfig -> {
             if (!new File(signConfig.getStorePath()).exists()) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Sign Configuration");
-                alert.setHeaderText("Keystore does not exist");
-                alert.setContentText("This Keystore does not exist, please create a Keystore or correct the Path");
-                alert.show();
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Sign Configuration",
+                        "Keystore does not exist",
+                        "This Keystore does not exist, please create a Keystore or correct the Path"
+                );
                 return;
             }
             if (edit) {
@@ -468,7 +464,7 @@ public class Controller {
                             .setSavedConfigDate(System.currentTimeMillis());
                 SignConfigModel[] signConfigs = new SignConfigModel[1];
                 keyTable.getItems().forEach(signConfig -> {
-                    if (signConfig.isActivated())
+                    if (signConfig.active())
                         signConfigs[0] = signConfig;
                 });
                 // TOdo disabled
@@ -481,11 +477,12 @@ public class Controller {
                         .setAttributes(attrTable.getItems())
                         .setSignConfig(signConfigs[0]);
             }
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Empty Name");
-            alert.setHeaderText("Empty Name");
-            alert.setContentText("You cannot provide empty names to save a Configuration");
-            alert.show();
+            MiscUtils.showAlert(
+                    Alert.AlertType.ERROR,
+                    "Saved Configuration",
+                    "Empty Name",
+                    "You cannot provide empty names to save a Configuration"
+            );
             return null;
         });
 
@@ -497,11 +494,11 @@ public class Controller {
                 SavedConfigModel.removeConfig(savedConfigModel);
             }
             if (!SavedConfigModel.addConfig(savedConfigModel1)) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setHeaderText("Duplicate Detected");
-                alert.setTitle("Unable to save Configuration");
-                alert.setContentText("A Saved Configuration with the same Name already exists, please chose a new name or delete the old Configuration.");
-                alert.show();
+                MiscUtils.showAlert(Alert.AlertType.ERROR,
+                        "Duplicate Detected",
+                        "Unable to save Configuration",
+                        "A Saved Configuration with the same Name already exists, please chose a new name or delete the old Configuration."
+                );
             } else
                 savedConfigTable.getItems().add(savedConfigModel1);
         });
@@ -568,11 +565,12 @@ public class Controller {
             if (param == ButtonType.APPLY && !textInput.getText().trim().isEmpty()) {
                 File file = new File(textInput.getText().trim());
                 if (!file.exists()) {
-                    Alert alert1 = new Alert(Alert.AlertType.ERROR);
-                    alert1.setTitle(title);
-                    alert.setHeaderText("This Path does not exist");
-                    alert.setContentText("The file or folder you specified does not exist");
-                    alert.show();
+                    MiscUtils.showAlert(
+                            Alert.AlertType.ERROR,
+                            title,
+                            "This Path does not exist",
+                            "The file or folder you specified does not exist"
+                    );
                     return null;
                 }
                 return file.getAbsolutePath();
@@ -586,6 +584,7 @@ public class Controller {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("General Settings");
         dialog.setHeaderText("Adb Settings");
+        dialog.setWidth(400d);
 
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
@@ -595,21 +594,35 @@ public class Controller {
         TableView<VirtualAdbDeviceModel> tableView = new TableView<>();
         TableColumn<VirtualAdbDeviceModel, String> deviceName = new TableColumn<>();
         deviceName.setCellValueFactory(param ->
-                new SimpleStringProperty(param.getValue().toString())
+                new SimpleStringProperty(param.getValue().getName())
         );
         TableColumn<VirtualAdbDeviceModel, String> pushPath = new TableColumn<>();
         pushPath.setCellValueFactory(param ->
-                new SimpleStringProperty(param.getValue().toString())
+                new SimpleStringProperty(param.getValue().getPushPath())
         );
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tableView.getColumns().add(deviceName);
         tableView.getColumns().add(pushPath);
+        tableView.setRowFactory(tv -> TableRowFactory.getCStateTableRow());
 
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(30, 10, 30, 10));
-        grid.add(tableView, 0, 0);
+        ButtonBar buttonBar = new ButtonBar();
+        buttonBar.getButtons().addAll(
+                new Button("Refresh"),
+                new Button("Edit..."),
+                new Button("Delete"),
+                new Button("Activate")
+        );
+        MiscUtils.temporaryDisable(
+                tableView.getSelectionModel().selectedItemProperty(),
+                buttonBar.getButtons().get(1),
+                buttonBar.getButtons().get(2)
+        );
 
-        dialog.getDialogPane().setContent(grid);
+        VBox vBox = new VBox(tableView, buttonBar);
+        vBox.setPadding(new Insets(10d));
+        vBox.setSpacing(10d);
+
+        dialog.getDialogPane().setContent(vBox);
 
         new Thread(() -> tableView.getItems().addAll(AdbUtils.getDevices())).start();
 
@@ -647,11 +660,12 @@ public class Controller {
     public void setSources(ActionEvent event) {
         String projectRoot = getPref(PROJECT_ROOT);
         if (projectRoot == null || !new File(projectRoot).exists()) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Manual Project Sources");
-            alert.setHeaderText("No Project Root set");
-            alert.setContentText("The Project Root needs to be set in order to set the Module Package");
-            alert.show();
+            MiscUtils.showAlert(
+                    Alert.AlertType.ERROR,
+                    "Manual Project Sources",
+                    "No Project Root set",
+                    "The Project Root needs to be set in order to manually set the Sources"
+            );
             return;
         }
         File projectRootFile = new File(projectRoot);
@@ -676,20 +690,25 @@ public class Controller {
                 new Button("Edit"),
                 new Button("Remove")
         );
+        MiscUtils.temporaryDisable(
+                listView.getSelectionModel().selectedItemProperty(),
+                buttonBar.getButtons().get(1),
+                buttonBar.getButtons().get(2)
+        );
         buttonBar.setPadding(new Insets(10));
-        buttonBar.getButtons().get(1).setDisable(true);
-        buttonBar.getButtons().get(2).setDisable(true);
+
         buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event1 -> {
             DirectoryChooser directoryChooser = new DirectoryChooser();
             directoryChooser.setTitle("Manual Project Sources");
             directoryChooser.setInitialDirectory(projectRootFile);
             File selected = directoryChooser.showDialog(Main.getStage());
             if (selected == null) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setContentText("Please select a Folder to use the Manual Project Sources Feature");
-                alert.setHeaderText("No Folder Selected");
-                alert.setTitle("Manual Project Sources");
-                alert.show();
+                MiscUtils.showAlert(
+                        Alert.AlertType.INFORMATION,
+                        "Manual Project Sources",
+                        "No Folder Selected",
+                        "Please select a Folder to use the Manual Project Sources Feature"
+                );
                 return;
             }
 
@@ -706,11 +725,12 @@ public class Controller {
             chooser.setTitle("Manual Project Sources");
             File chosenDir = chooser.showDialog(Main.getStage());
             if (chosenDir == null) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setContentText("Please select a Folder to edit a source.");
-                alert.setHeaderText("No Folder Selected");
-                alert.setTitle("Manual Project Sources");
-                alert.show();
+                MiscUtils.showAlert(
+                        Alert.AlertType.INFORMATION,
+                        "Manual Project Sources",
+                        "No Folder Selected",
+                        "Please select a Folder to edit a source."
+                );
                 return;
             }
 
@@ -724,21 +744,8 @@ public class Controller {
         });
         buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event13 -> {
             String selected = listView.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Manual Project Sources");
-                alert.setHeaderText("No Selected an Item");
-                alert.setContentText("Please select an item in the list to delete it.");
-                alert.show();
-                return;
-            }
             listView.getItems().remove(selected);
             removeFromCollection(FILE_SOURCES, selected);
-        });
-
-        listView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            buttonBar.getButtons().get(1).setDisable(false);
-            buttonBar.getButtons().get(2).setDisable(false);
         });
 
         VBox vBox = new VBox(listView, buttonBar);
@@ -763,7 +770,7 @@ public class Controller {
     }
 
     public void toggleSignPack(ActionEvent event) {
-        keyTable.setDisable(
+        keyContainer.setDisable(
                 !togglePref(SIGN_PACK)
         );
     }
@@ -784,9 +791,12 @@ public class Controller {
         // TODO
         String preferenceCheck = checkPreferences();
         if (preferenceCheck != null) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText(preferenceCheck);
-            alert.show();
+            MiscUtils.showAlert(
+                    Alert.AlertType.ERROR,
+                    "ModulePack Compiler",
+                    "Set Preference",
+                    preferenceCheck
+            );
             return;
         }
 
@@ -819,9 +829,12 @@ public class Controller {
             LogUtils.getLogger().debug("Finished Pack Compiler");
         } catch (Exception e) {
             LogUtils.getLogger().error("Could not compile Pack", e);
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText(e.getMessage());
-            alert.show();
+            MiscUtils.showAlert(
+                    Alert.AlertType.ERROR,
+                    "ModulePack Compiler",
+                    e.getMessage(),
+                    Arrays.deepToString(e.getStackTrace())
+            );
         }
         progressBar.setVisible(false);
         progressBar.setProgress(0);
@@ -949,7 +962,7 @@ public class Controller {
                 return "Disable Signing Packs or add a new Key Configuration";
             int[] foundActivated = new int[]{0};
             keyTable.getItems().forEach(signConfig -> {
-                if (signConfig.isActivated())
+                if (signConfig.active())
                     foundActivated[0]++;
             });
             if (foundActivated[0] != 1)

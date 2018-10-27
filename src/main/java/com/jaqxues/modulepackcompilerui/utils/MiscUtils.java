@@ -1,5 +1,14 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
+import javax.annotation.concurrent.ThreadSafe;
+
+import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
+
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
 
@@ -26,5 +35,40 @@ public class MiscUtils {
 
     public static String getProgramFilesDir() {
         return System.getenv("ProgramFiles");
+    }
+
+    /**
+     * Shows a JavaFX alert from any thread.
+     *
+     * @param alertType Sets the alert type of the error
+     * @param title Title of the Alert
+     * @param header HeaderText of the Alert
+     * @param message ContentText of the Alert
+     */
+    public static void showAlert(Alert.AlertType alertType, String title, String header, String message) {
+        Runnable runnable = () -> {
+            Alert alert = new Alert(alertType);
+            alert.setTitle(title);
+            alert.setHeaderText(header);
+            alert.setContentText(message);
+            alert.show();
+        };
+        if (Platform.isFxApplicationThread())
+            runnable.run();
+        else
+            Platform.runLater(runnable);
+    }
+
+    public static <T> void temporaryDisable(ReadOnlyObjectProperty<T> property, Node... nodes) {
+        for (Node node : nodes)
+            node.setDisable(true);
+        property.addListener(new ChangeListener<T>() {
+            @Override
+            public void changed(ObservableValue observable, Object oldValue, Object newValue) {
+                property.removeListener(this);
+                for (Node node : nodes)
+                    node.setDisable(false);
+            }
+        });
     }
 }
