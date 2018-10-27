@@ -14,6 +14,7 @@ import java.util.List;
  */
 
 public enum PreferencesDef {
+    DARK_THEME("DarkTheme", Boolean.class, false),
     PROJECT_ROOT("ProjectRoot", String.class, null),
     MODULE_PACKAGE("ModulePackage", String.class, null),
     FILE_SOURCES("FileSources", ArrayList.class, null),

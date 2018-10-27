@@ -6,6 +6,7 @@ import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -15,6 +16,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.Key;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -170,17 +173,18 @@ public class PackCompiler extends Task<File> {
      * @throws Exception Runtime Exception while running command and Signing the Jar
      */
     private void signOutput() throws Exception {
-        String command = String.format("\"%s\\bin\\jarsigner.exe\" -tsa https://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
+        String command = String.format("\"%s\\bin\\jarsigner.exe\" -tsa http://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
                 getPref(JDK_INSTALLATION_PATH),
                 signConfig.getStorePath(),
                 jarTarget.getAbsolutePath(),
                 jarTarget.getAbsolutePath(),
                 signConfig.getKeyAlias()
         );
-        LogUtils.getLogger().debug("Generated Command: %s", command);
+        LogUtils.getLogger().debug("Generated Command: " + command);
         Process process = Runtime.getRuntime().exec(command);
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(process.getOutputStream());
         outputStreamWriter.append(signConfig.getStorePassword())
+                .append("\n")
                 .append(signConfig.getKeyPassword())
                 .flush();
         outputStreamWriter.close();
@@ -330,7 +334,7 @@ public class PackCompiler extends Task<File> {
             if (jarTarget == null) {
                 throw new IllegalArgumentException("No Jar Target Provided");
             }
-            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), vAdbDevices.toArray(new VirtualAdbDeviceModel[0]), jarTarget, signConfig);
+            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), (vAdbDevices == null ) ? new VirtualAdbDeviceModel[0] : vAdbDevices.toArray(new VirtualAdbDeviceModel[0]), jarTarget, signConfig);
         }
     }
 }

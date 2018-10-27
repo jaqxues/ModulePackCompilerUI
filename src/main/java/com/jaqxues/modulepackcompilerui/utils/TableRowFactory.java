@@ -2,6 +2,9 @@ package com.jaqxues.modulepackcompilerui.utils;
 
 import javafx.scene.control.TableRow;
 
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.DARK_THEME;
+
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
  * Date: 26.10.2018 - Time 23:50.
@@ -11,17 +14,17 @@ public class TableRowFactory {
 
     public static <T extends ActiveStateManager> TableRow<T> getAStateTableRow() {
         return new TableRow<T>() {
+            private final String getColor(boolean selected) {
+                if (selected)
+                    return getPref(DARK_THEME) ? "darkgreen" : "green";
+                return getPref(DARK_THEME) ? "green" : "lightgreen";
+            }
             @Override
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
                 if (item != null && item.active()) {
-                    setStyle("-fx-background-color: lightgreen");
-                    selectedProperty().addListener((observable, oldValue, newValue) -> {
-                        if (newValue)
-                            setStyle("-fx-background-color: green;");
-                        else
-                            setStyle("-fx-background-color: lightgreen;");
-                    });
+                    setStyle("-fx-background-color: " + getColor(false));
+                    selectedProperty().addListener((observable, oldValue, newValue) -> setStyle("-fx-background-color: " + getColor(newValue)));
                 }
             }
         };

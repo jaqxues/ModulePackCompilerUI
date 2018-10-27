@@ -83,7 +83,7 @@ public class PreferenceManager {
         return value;
     }
 
-    private static void saveMap() {
+    public static void saveMap() {
         synchronized (WRITE_LOCK) {
             try (BufferedWriter writer = new BufferedWriter(
                     new FileWriter(preferencesFile)

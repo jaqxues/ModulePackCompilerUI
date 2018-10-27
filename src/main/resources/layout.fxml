@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jaqxues.modulepackcompilerui.Controller">
+<GridPane fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jaqxues.modulepackcompilerui.Controller">
   <columnConstraints>
     <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
     <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -44,6 +44,7 @@
                         <Button mnemonicParsing="false" onAction="#compileModPack" text="Compile Module Pack" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
                         <CheckBox fx:id="adbPushToggle" layoutX="22.0" layoutY="191.0" mnemonicParsing="false" onAction="#adbPushToggle" text="Adb Push" AnchorPane.leftAnchor="10.0" AnchorPane.topAnchor="160.0" />
                         <Button fx:id="adbPushSettings" layoutX="173.0" layoutY="187.0" mnemonicParsing="false" onAction="#adbPushSettings" text="Adb Push Settings" AnchorPane.leftAnchor="160.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="160.0" />
+                        <Button layoutX="173.0" layoutY="287.0" mnemonicParsing="false" onAction="#otherPrefs" text="Other Settings" AnchorPane.bottomAnchor="40.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" />
                      </children>
                   </AnchorPane>
                </content>

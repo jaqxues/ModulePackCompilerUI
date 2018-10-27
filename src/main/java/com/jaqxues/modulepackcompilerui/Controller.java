@@ -11,6 +11,9 @@ import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
 import com.jaqxues.modulepackcompilerui.utils.TableRowFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.security.Key;
+import java.security.KeyStore;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,10 +28,10 @@ import javax.annotation.Nullable;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -47,7 +50,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import sun.plugin.javascript.navig.Anchor;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearCollection;
@@ -57,6 +59,7 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.rem
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.togglePref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ATTRIBUTES;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.DARK_THEME;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.FILE_SOURCES;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
@@ -72,6 +75,10 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_P
 
 public class Controller {
 
+    private static final String DARK_CSS = "css/modena-dark.css";
+
+    @FXML
+    private Parent root;
     @FXML
     private TableView<String> attrTable;
     @FXML
@@ -148,6 +155,7 @@ public class Controller {
         initSigning();
         initSavedConfig();
         initAdbPush();
+        setTheme(getPref(DARK_THEME));
     }
 
     private void initAttributes() {
@@ -212,9 +220,10 @@ public class Controller {
         );
 
         keyTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> selectSignConfigBtn.setText(
-                newValue.active() ?
-                        "Disable" :
-                        "Activate"
+                newValue == null ? "Activate" :
+                        newValue.active() ?
+                                "Disable" :
+                                "Activate"
         ));
         MiscUtils.temporaryDisable(
                 keyTable.getSelectionModel().selectedItemProperty(),
@@ -259,11 +268,10 @@ public class Controller {
     private void attrInputDialog(@Nullable String string) {
         boolean edit = string != null;
         Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Attributes Manager");
         if (edit) {
-            dialog.setTitle("Edit Attribute");
             dialog.setHeaderText("Edit the Attribute Values");
         } else {
-            dialog.setTitle("Add Attribute");
             dialog.setHeaderText("Please enter a new Attribute");
         }
 
@@ -296,17 +304,49 @@ public class Controller {
         Platform.runLater(name::requestFocus);
 
         dialog.setResultConverter(param -> {
-            if (param == ButtonType.APPLY
-                    && !name.getText().trim().isEmpty()
-                    && !value.getText().trim().isEmpty()) {
-                return name.getText().trim() + "=" + value.getText().trim();
+            if (param != ButtonType.APPLY)
+                return null;
+            String nameTxt = name.getText().trim();
+            String valueTxt = value.getText().trim();
+            if (!nameTxt.isEmpty() && !valueTxt.isEmpty()) {
+
+                if (!nameTxt.matches("^[a-zA-Z0-9]+$") ||
+                        !valueTxt.matches("^[a-zA-Z0-9]+$")) {
+                    MiscUtils.showAlert(
+                            Alert.AlertType.INFORMATION,
+                            "Attributes Manager",
+                            "Use of illegal Characters",
+                            "You may only use Latin letters and Numbers as Attributes"
+                    );
+                    return null;
+                }
+                boolean[] found = {false};
+                //noinspection unchecked
+                ((List<String>) getPref(ATTRIBUTES)).forEach(s -> {
+                    if (nameTxt.equals(s.split("=", 2)[0]))
+                        found[0] = true;
+                });
+                if (!found[0])
+                    return nameTxt + "=" + value.getText().trim();
+                MiscUtils.showAlert(
+                        Alert.AlertType.INFORMATION,
+                        "Attributes Manager",
+                        "Attribute Duplicate",
+                        "Attribute " + nameTxt + " already exists"
+                );
+                return null;
             }
+
+            MiscUtils.showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Attributes Manager",
+                    "Empty Values",
+                    "You cannot use an empty value as attribute."
+            );
             return null;
         });
 
-        Optional<String> result = dialog.showAndWait();
-
-        result.ifPresent(string1 -> {
+        dialog.showAndWait().ifPresent(string1 -> {
             if (edit) {
                 attrTable.getItems().remove(string);
                 removeFromCollection(ATTRIBUTES, string);
@@ -385,12 +425,29 @@ public class Controller {
                     && !storePassword.getText().trim().isEmpty()
                     && !keyAlias.getText().trim().isEmpty()
                     && !keyPassword.getText().trim().isEmpty()) {
-                return new SignConfigModel(
+                SignConfigModel signConfigModel = new SignConfigModel(
                         storePath.getText().trim(),
                         storePassword.getText().trim(),
                         keyAlias.getText().trim(),
-                        keyPassword.getText().trim());
+                        keyPassword.getText().trim()
+                );
+                if (getSignKey(signConfigModel) == null) {
+                    MiscUtils.showAlert(
+                            Alert.AlertType.ERROR,
+                            "Signing Configuration",
+                            "Unable to load Key",
+                            "The values of this SignConfig are invalid; Key cannot be instantiated"
+                    );
+                    return null;
+                }
+                return signConfigModel;
             }
+            MiscUtils.showAlert(
+                    Alert.AlertType.ERROR,
+                    "Signing Configurations",
+                    "Empty Values not allowed",
+                    "These TextFields cannot be left out"
+            );
             return null;
         });
 
@@ -629,6 +686,29 @@ public class Controller {
         dialog.show();
     }
 
+    private void otherPrefsDialog() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Other Preferences");
+        dialog.setHeaderText("Other less important Preferences");
+
+        dialog.getDialogPane().getButtonTypes().addAll(
+                ButtonType.APPLY,
+                ButtonType.CANCEL
+        );
+
+        CheckBox darkThemeCheck = new CheckBox("Dark Theme");
+        darkThemeCheck.setSelected(getPref(DARK_THEME));
+        darkThemeCheck.selectedProperty().addListener((observable, oldValue, newValue) -> setTheme(newValue));
+
+        VBox vBox = new VBox(darkThemeCheck);
+        vBox.setPadding(new Insets(10d));
+        vBox.setSpacing(10d);
+
+        dialog.getDialogPane().setContent(vBox);
+
+        dialog.show();
+    }
+
     // ============================================================================================
     // EVENT METHODS
     // ============================================================================================
@@ -819,7 +899,7 @@ public class Controller {
             PackCompiler packCompiler = new PackCompiler.Builder()
                     .setAttributes(attrTable.getItems())
                     .setJarTarget(new File("Files/Packs/STModulePack")) // TODO Use File From Template
-                    .setSignConfig(keyTable.getSelectionModel().getSelectedItem())
+                    .setSignConfig(getActiveSigning())
                     .setSources(sources)
                     .build();
             // TODO Async
@@ -843,8 +923,8 @@ public class Controller {
     public void setSDKBuildTools(ActionEvent event) {
         String path = getPref(SDK_BUILD_TOOLS);
         if (path == null || !new File(path).exists()) {
-            path = MiscUtils.getLocalAppDataDir() + "/Android/Sdk/build-tools";
-            if (new File(path).exists())
+            path = MiscUtils.getLocalAppDataDir() + "\\Android\\Sdk\\build-tools";
+            if (!new File(path).exists())
                 path = MiscUtils.getLocalAppDataDir();
         }
 
@@ -860,7 +940,7 @@ public class Controller {
     public void setJDKInstallation(ActionEvent event) {
         String path = getPref(JDK_INSTALLATION_PATH);
         if (path == null || !new File(path).exists()) {
-            path = MiscUtils.getProgramFilesDir() + "/Java";
+            path = MiscUtils.getProgramFilesDir() + "\\Java";
             if (!new File(path).exists())
                 path = MiscUtils.getProgramFilesDir();
         }
@@ -942,9 +1022,16 @@ public class Controller {
     }
 
     public void activateSignConfig(ActionEvent event) {
+        boolean active = !keyTable.getSelectionModel().getSelectedItem().active();
         keyTable.getItems().forEach(signConfig -> signConfig.setActive(false));
-        keyTable.getSelectionModel().getSelectedItem().setActive(true);
+        keyTable.getSelectionModel().getSelectedItem().setActive(active);
+        selectSignConfigBtn.setText(active ? "Disable" : "Activate");
+        PreferenceManager.saveMap();
         keyTable.refresh();
+    }
+
+    public void otherPrefs(ActionEvent event) {
+        otherPrefsDialog();
     }
 
 
@@ -960,19 +1047,56 @@ public class Controller {
         if (getPref(SIGN_PACK)) {
             if ((((Collection<?>) getPref(SIGN_CONFIGS)).isEmpty()))
                 return "Disable Signing Packs or add a new Key Configuration";
-            int[] foundActivated = new int[]{0};
-            keyTable.getItems().forEach(signConfig -> {
-                if (signConfig.active())
-                    foundActivated[0]++;
-            });
-            if (foundActivated[0] != 1)
-                return (foundActivated[0] == 0 ? "Unable to find an" : "Found more than one")
+            int i = getActiveSignConfigsSize();
+            if (i != 1)
+                return (i == 0 ? "Unable to find an" : "Found more than one")
                         + " activated Signing Configuration. Please select only one Singing Configuration";
+
         }
         if (getPref(SDK_BUILD_TOOLS) == null)
             return "Set the SDK Build Tools Path in General Settings";
         if (getPref(JDK_INSTALLATION_PATH) == null)
             return "Set the JDK Installation Path in General Settings";
         return null;
+    }
+
+    private void setTheme(boolean darkTheme) {
+        if (putPref(DARK_THEME, darkTheme)) {
+            if (!root.getStylesheets().contains(DARK_CSS))
+                root.getStylesheets().add(DARK_CSS);
+        } else
+            root.getStylesheets().remove(DARK_CSS);
+        // Refreshing Tables that could contain active items. The background color of the items needs to be changed.
+        keyTable.refresh();
+        attrTable.refresh();
+    }
+
+    private SignConfigModel getActiveSigning() {
+        SignConfigModel signs = null;
+        for (SignConfigModel signConfigModel : keyTable.getItems())
+            if (signConfigModel.active())
+                signs = signConfigModel;
+        return signs;
+    }
+
+    private int getActiveSignConfigsSize() {
+        int i = 0;
+        for (SignConfigModel signC : keyTable.getItems())
+            if (signC.active())
+                i++;
+        return i;
+    }
+
+    @Nullable
+    private Key getSignKey(SignConfigModel signConfigModel) {
+        Key key = null;
+        try {
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(new FileInputStream(signConfigModel.getStorePath()), signConfigModel.getStorePassword().toCharArray());
+            key = keyStore.getKey(signConfigModel.getKeyAlias(), signConfigModel.getKeyPassword().toCharArray());
+        } catch (Exception e) {
+            LogUtils.getLogger().error("SignConfig invalid", e);
+        }
+        return key;
     }
 }
