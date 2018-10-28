@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
-import com.jaqxues.modulepackcompilerui.utils.BooleanPair;
 import com.jaqxues.modulepackcompilerui.utils.GsonSingleton;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 
@@ -14,10 +13,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-
-import javafx.util.Pair;
+import java.util.Map;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -41,7 +40,7 @@ public class SavedConfigModel {
     @SerializedName("ModulePackage")
     public String modulePackage;
     @SerializedName("ModuleSources")
-    public List<BooleanPair<String>> moduleSources;
+    public Map<String, Boolean> moduleSources;
     @SerializedName("Attributes")
     public List<String> attributes;
 
@@ -62,6 +61,8 @@ public class SavedConfigModel {
     }
 
     public static void removeConfig(SavedConfigModel model) {
+        if (model == null)
+            return;
         JsonArray object = getConfigJson();
         Iterator<JsonElement> iterator = object.iterator();
         while (iterator.hasNext()) {
@@ -78,24 +79,7 @@ public class SavedConfigModel {
         JsonArray object = getConfigJson();
         if (object.size() == 0) {
             SavedConfigModel[] savedConfigModels = new SavedConfigModel[]{
-                    new SavedConfigModel()
-                            .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
-                            .setSavedConfigDate(System.currentTimeMillis())
-                            .setSavedConfigName("Default SnapTools Configuration")
-                            .setAttributes(Arrays.asList(
-                                    "Development=TRUE",
-                                    "PackVersion=1.0.0.0",
-                                    "Flavour=prod",
-                                    "Type=Premium",
-                                    "SCVersion=10.41.6.0"
-                            ))
-                            .setSavedConfigDate(System.currentTimeMillis())
-                            .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
-                            .setModuleSources(
-                                    Arrays.asList(
-                                            new BooleanPair<>("/app/build/intermediates/transforms/desugar/pack/release/0/", true),
-                                            new BooleanPair<>("/app/build/tmp/kotlin-classes/packRelease/", true)
-                            ))
+                    getDefaultSignConfig()
             };
             saveJson(GsonSingleton.getSingleton().toJsonTree(savedConfigModels));
             return savedConfigModels;
@@ -114,6 +98,28 @@ public class SavedConfigModel {
         } catch (IOException e) {
             LogUtils.getLogger().error("Unable to save SavedConfig Json", e);
         }
+    }
+
+    private static SavedConfigModel getDefaultSignConfig() {
+        Map<String, Boolean> sources = new HashMap<>();
+        sources.put("/app/build/intermediates/transforms/desugar/pack/release/0/", true);
+        sources.put("/app/build/tmp/kotlin-classes/packRelease/", true);
+        sources.put("/app/build/intermediates/transforms/desugar/pack/debug/0/", false);
+        sources.put("/app/build/tmp/kotlin-classes/packDebug/", false);
+        return new SavedConfigModel()
+                        .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
+                        .setSavedConfigDate(System.currentTimeMillis())
+                        .setSavedConfigName("Default SnapTools Configuration")
+                        .setAttributes(Arrays.asList(
+                                "Development=TRUE",
+                                "PackVersion=1.0.0.0",
+                                "Flavour=prod",
+                                "Type=Premium",
+                                "SCVersion=10.41.6.0"
+                        ))
+                        .setSavedConfigDate(System.currentTimeMillis())
+                        .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
+                        .setModuleSources(sources);
     }
 
     private static JsonArray getConfigJson() {
@@ -199,11 +205,11 @@ public class SavedConfigModel {
         return this;
     }
 
-    public List<BooleanPair<String>> getModuleSources() {
+    public Map<String, Boolean> getModuleSources() {
         return moduleSources;
     }
 
-    public SavedConfigModel setModuleSources(List<BooleanPair<String>> moduleSources) {
+    public SavedConfigModel setModuleSources(Map<String, Boolean> moduleSources) {
         this.moduleSources = moduleSources;
         return this;
     }

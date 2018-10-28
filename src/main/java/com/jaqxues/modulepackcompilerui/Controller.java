@@ -5,7 +5,6 @@ import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
 import com.jaqxues.modulepackcompilerui.utils.AdbUtils;
-import com.jaqxues.modulepackcompilerui.utils.BooleanPair;
 import com.jaqxues.modulepackcompilerui.utils.LogUtils;
 import com.jaqxues.modulepackcompilerui.utils.MiscUtils;
 import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
@@ -18,10 +17,10 @@ import java.security.KeyStore;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.CheckReturnValue;
@@ -53,10 +52,12 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToMap;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromCollection;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromMap;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.togglePref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ATTRIBUTES;
@@ -516,13 +517,14 @@ public class Controller {
         dialog.setResultConverter(param -> {
             if (param != ButtonType.APPLY)
                 return null;
-            if (!name.getText().trim().isEmpty()) {
+            String nameTxt = name.getText().trim();
+            if (!nameTxt.isEmpty()) {
                 if (edit)
-                    return savedConfigModel.setSavedConfigName(name.getText().trim())
+                    return savedConfigModel.setSavedConfigName(nameTxt)
                             .setSavedConfigNotices(notice.getText().trim())
                             .setSavedConfigDate(System.currentTimeMillis());
                 SignConfigModel signConfig = getActiveSigning();
-                return new SavedConfigModel().setSavedConfigName(name.getText().trim())
+                return new SavedConfigModel().setSavedConfigName(nameTxt)
                         .setSavedConfigNotices(notice.getText().trim())
                         .setSavedConfigDate(System.currentTimeMillis())
                         .setProjectRoot(getPref(PROJECT_ROOT))
@@ -754,12 +756,11 @@ public class Controller {
                 .addAll(ButtonType.APPLY,
                         ButtonType.CANCEL
                 );
-
-        ListView<BooleanPair<String>> listView = new ListView<>();
+        ListView<Map.Entry<String, Boolean>> listView = new ListView<>();
         //noinspection unchecked
-        listView.getItems().addAll((List<BooleanPair<String>>) getPref(FILE_SOURCES));
+        listView.getItems().addAll(((Map<String, Boolean>) getPref(FILE_SOURCES)).entrySet());
         listView.setPadding(new Insets(10));
-        listView.setCellFactory(param -> RowCellFactory.getBooleanPairListCell());
+        listView.setCellFactory(param -> RowCellFactory.getSourcesListCell());
 
         ButtonBar buttonBar = new ButtonBar();
         buttonBar.getButtons().addAll(
@@ -793,14 +794,14 @@ public class Controller {
                 );
                 return;
             }
-
-            BooleanPair<String> pair = new BooleanPair<>(File.separator + projectRootFile.toPath().relativize(selected.toPath()).toString() + File.separator, true);
-            LogUtils.getLogger().debug("Relativized Path: " + pair.getKey());
-            addToCollection(FILE_SOURCES, pair);
-            listView.getItems().add(pair);
+            listView.getItems().add(
+                    MiscUtils.getEntryFromMap(
+                            getPref(FILE_SOURCES),
+                            addToMap(FILE_SOURCES, File.separator + projectRootFile.toPath().relativize(selected.toPath()).toString() + File.separator, true))
+            );
         });
-        buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event12 -> {
-            BooleanPair<String> selected = listView.getSelectionModel().getSelectedItem();
+        buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event1 -> {
+            Map.Entry<String, Boolean> selected = listView.getSelectionModel().getSelectedItem();
 
             DirectoryChooser chooser = new DirectoryChooser();
             chooser.setInitialDirectory(new File(projectRootFile, selected.getKey()));
@@ -817,17 +818,23 @@ public class Controller {
             }
 
             listView.getItems().remove(selected);
-            removeFromCollection(FILE_SOURCES, selected);
+            removeFromMap(FILE_SOURCES, selected);
 
-            BooleanPair<String> relativized = new BooleanPair<>(File.separator + projectRootFile.toPath().relativize(chosenDir.toPath()).toString() + File.separator, true);
-            LogUtils.getLogger().debug("Relativized Path: " + relativized.getKey());
-            addToCollection(FILE_SOURCES, relativized);
-            listView.getItems().add(relativized);
+            listView.getItems().add(MiscUtils.getEntryFromMap(
+                    getPref(FILE_SOURCES),
+                    addToMap(FILE_SOURCES, File.separator + projectRootFile.toPath().relativize(chosenDir.toPath()).toString() + File.separator, true))
+            );
         });
-        buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event13 -> {
-            BooleanPair<String> selected = listView.getSelectionModel().getSelectedItem();
+        buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event1 -> {
+            Map.Entry<String, Boolean> selected = listView.getSelectionModel().getSelectedItem();
             listView.getItems().remove(selected);
-            removeFromCollection(FILE_SOURCES, selected);
+            removeFromMap(FILE_SOURCES, selected);
+        });
+        buttonBar.getButtons().get(3).addEventHandler(ActionEvent.ANY, event1 -> {
+            Map.Entry<String, Boolean> selected = listView.getSelectionModel().getSelectedItem();
+            ((Button) buttonBar.getButtons().get(3)).setText(!selected.setValue(!selected.getValue()) ? "Disable" : "Activate");
+            PreferenceManager.saveMap();
+            listView.refresh();
         });
 
         VBox vBox = new VBox(listView, buttonBar);
@@ -881,46 +888,56 @@ public class Controller {
             );
             return;
         }
+        progressBar.setVisible(true);
+        progressBar.setProgress(-1.0);
 
         List<File> sources = new ArrayList<>();
-//                        + (debug ? "/app/build/intermediates/transforms/desugar/pack/debug/0/" : "/app/build/intermediates/transforms/desugar/pack/release/0/")
-//                        + getPref(MODULE_PACKAGE)
-//                                + "/app/build/intermediates/transforms/desugar/pack/release/0/"
-//                        + (debug ? "/app/build/tmp/kotlin-classes/packDebug/" : "/app/build/tmp/kotlin-classes/packRelease/")
-//                        + getPref(MODULE_PACKAGE)
-//                                + "/app/build/tmp/kotlin-classes/packRelease/"
 
         //noinspection unchecked
-        for (BooleanPair<String> source : (List<BooleanPair<String>>) getPref(FILE_SOURCES)) {
-            if (source.getValue()) 
+        for (Map.Entry<String, Boolean> source : ((Map<String, Boolean>) getPref(FILE_SOURCES)).entrySet()) {
+            if (source.getValue())
                 sources.add(new File(getPref(PROJECT_ROOT) + source.getKey() + MiscUtils.getMPFolder()));
         }
 
-        try {
-            progressBar.setVisible(true);
-            progressBar.setProgress(-1.0);
-            PackCompiler packCompiler = new PackCompiler.Builder()
-                    .setAttributes(attrTable.getItems())
-                    .setJarTarget(new File("Files/Packs/STModulePack")) // TODO Use File From Template
-                    .setSignConfig(getActiveSigning())
-                    .setSources(sources)
-                    .build();
-            // TODO Async
-            LogUtils.getLogger().debug("Built PackCompiler Instance, Executing task...");
-            packCompiler.call();
-
-            LogUtils.getLogger().debug("Finished Pack Compiler");
-        } catch (Exception e) {
-            LogUtils.getLogger().error("Could not compile Pack", e);
-            MiscUtils.showAlert(
-                    Alert.AlertType.ERROR,
-                    "ModulePack Compiler",
-                    e.getMessage(),
-                    Arrays.deepToString(e.getStackTrace())
-            );
-        }
-        progressBar.setVisible(false);
-        progressBar.setProgress(0);
+        new Thread(() -> {
+            try {
+                PackCompiler packCompiler = new PackCompiler.Builder()
+                        .setAttributes(attrTable.getItems())
+                        .setJarTarget(new File("Files/Packs/STModulePack")) // TODO Use File From Template
+                        .setSignConfig(getActiveSigning())
+                        .setSources(sources)
+                        .build();
+                LogUtils.getLogger().debug("Built PackCompiler Instance, Executing task...");
+                if (packCompiler.init()) {
+                    LogUtils.getLogger().debug("Finished Pack Compiler");
+                    Platform.runLater(() -> {
+                        progressBar.setProgress(0);
+                        progressBar.setVisible(false);
+                        MiscUtils.showAlert(
+                                Alert.AlertType.INFORMATION,
+                                "ModulePack Compiler",
+                                "Successfully compiled Module Pack",
+                                packCompiler.getDescription(),
+                                1200d,
+                                400d
+                        );
+                    });
+                } else
+                    LogUtils.getLogger().debug("Already compiling on different thread");
+            } catch (Exception e) {
+                LogUtils.getLogger().error("Could not compile Pack", e);
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "ModulePack Compiler",
+                        "Could not compile Module Pack",
+                        e.getMessage()
+                );
+                Platform.runLater(() -> {
+                    progressBar.setProgress(0);
+                    progressBar.setVisible(false);
+                });
+            }
+        }).start();
     }
 
     public void setSDKBuildTools(ActionEvent event) {
@@ -1006,6 +1023,18 @@ public class Controller {
         SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
         savedConfigTable.getItems().remove(model);
         SavedConfigModel.removeConfig(model);
+        if (savedConfigTable.getItems().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Saved Configurations");
+            alert.setHeaderText("No Saved Configurations");
+            alert.setContentText("The List of Saved Configurations is empty, do you want to load the SnapTools default Configuration?");
+            alert.showAndWait().ifPresent(buttonType -> {
+                if (buttonType == ButtonType.OK) {
+                    SavedConfigModel[] defaultModel = SavedConfigModel.getConfigs();
+                    savedConfigTable.getItems().addAll(defaultModel);
+                }
+            });
+        }
     }
 
     public void resetCurrentPrefs(ActionEvent event) {

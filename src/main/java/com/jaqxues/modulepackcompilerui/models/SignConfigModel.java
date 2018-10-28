@@ -1,5 +1,6 @@
 package com.jaqxues.modulepackcompilerui.models;
 
+import com.google.common.base.MoreObjects;
 import com.google.gson.annotations.SerializedName;
 import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
@@ -56,5 +57,21 @@ public class SignConfigModel implements RowCellFactory.ActiveStateManager {
     @Override
     public boolean active() {
         return isActive;
+    }
+
+    @Override
+    public String getString() {
+        return toString();
+    }
+
+    @Override
+    public String toString() {
+        return "SignConfigModel{" +
+                "storePath='" + storePath + '\'' +
+                ", storePassword='" + storePassword + '\'' +
+                ", keyAlias='" + keyAlias + '\'' +
+                ", keyPassword='" + keyPassword + '\'' +
+                ", isActive=" + isActive +
+                '}';
     }
 }

@@ -1,10 +1,16 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
+import java.io.File;
+import java.util.Map;
+
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableRow;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.DARK_THEME;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -13,7 +19,7 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.DARK_T
 
 public class RowCellFactory {
 
-    public static <T extends ActiveStateManager> ListCell<T> getBooleanPairListCell() {
+    public static <T extends ActiveStateManager> ListCell<T> getAStateListCell() {
         return new ListCell<T>() {
             private String getColor(boolean selected) {
                 if (selected)
@@ -25,7 +31,7 @@ public class RowCellFactory {
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
                 if (!empty)
-                    setText(item.toString());
+                    setText(item.getString());
                 if (!empty && item.active()) {
                     setStyle("-fx-background-color: " + getColor(false));
                     selectedProperty().addListener((observable, oldValue, newValue) -> setStyle("-fx-background-color: " + getColor(newValue)));
@@ -44,11 +50,72 @@ public class RowCellFactory {
             @Override
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
-                if (!empty && item.active()) {
+                if (empty)
+                    return;
+                setText(item.getString());
+                if (item.active()) {
                     setStyle("-fx-background-color: " + getColor(false));
                     selectedProperty().addListener((observable, oldValue, newValue) -> setStyle("-fx-background-color: " + getColor(newValue)));
                 }
             }
+        };
+    }
+
+    public static ListCell<Map.Entry<String, Boolean>> getSourcesListCell() {
+        return new ListCell<Map.Entry<String, Boolean>>() {
+
+            ChangeListener<? super Boolean> listener;
+
+            private void setBgRow(String normalColor, String selectedColor) {
+                if (listener != null)
+                    selectedProperty().removeListener(listener);
+                if (normalColor == null && selectedColor == null) {
+                    setStyle(null);
+                    return;
+                }
+                setStyle("-fx-background-color: " + normalColor);
+                listener = (observable, oldValue, newValue) -> {
+                    if (newValue)
+                        setStyle("-fx-background-color: " + selectedColor);
+                    else
+                        setStyle("-fx-background-color: " + normalColor);
+                };
+                selectedProperty().addListener(listener);
+            }
+
+            @Override
+            protected void updateItem(Map.Entry<String, Boolean> item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty)
+                    return;
+                setText(item.getKey());
+                switch (sourceState(item)) {
+                    case 3:
+                        setBgRow("red", "darkred");
+                        break;
+                    case 2:
+                        setBgRow("orange", "darkorange");
+                        break;
+                    case 1:
+                        setBgRow(getPref(DARK_THEME) ? "green" : "lightgreen", getPref(DARK_THEME) ? "darkgreen" : "green");
+                        break;
+                    case 0:
+                        setBgRow(null, null);
+                        break;
+                    default:
+                        LogUtils.getLogger().error("Unknown Color Int, " + sourceState(item));
+                }
+            }
+        };
+    }
+
+    private static int sourceState(Map.Entry<String, Boolean> entry) {
+        return (entry.getValue() ? new File((String) getPref(PROJECT_ROOT)).exists() ? 1 : 3 : 0);
+    }
+
+    public static <T extends ColorStateManager> ListCell<T> getCStateListCell() {
+        return new ListCell<T>() {
+
         };
     }
 
@@ -67,8 +134,9 @@ public class RowCellFactory {
             @Override
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item.tableRowColor() == 0)
+                if (empty)
                     return;
+                setText(item.getString());
                 switch (item.tableRowColor()) {
                     case 3:
                         setBgRow("red", "darkred");
@@ -79,6 +147,9 @@ public class RowCellFactory {
                     case 1:
                         setBgRow("lightgreen", "green");
                         break;
+                    case 0:
+                        setStyle(null);
+                        break;
                     default:
                         LogUtils.getLogger().error("Unknown Color Int, " + item.tableRowColor());
                 }
@@ -88,6 +159,8 @@ public class RowCellFactory {
 
     public interface ActiveStateManager {
         boolean active();
+
+        String getString();
     }
 
     public interface ColorStateManager {
@@ -120,5 +193,7 @@ public class RowCellFactory {
          * @return An int between 0 and 3.
          */
         int tableRowColor();
+
+        String getString();
     }
 }

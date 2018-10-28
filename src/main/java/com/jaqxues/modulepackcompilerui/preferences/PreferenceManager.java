@@ -105,6 +105,20 @@ public class PreferenceManager {
         return value;
     }
 
+    public static <K, T> K addToMap(PreferencesDef pref, K key, T value) {
+        //noinspection unchecked
+        ((Map<K, T>) getPref(pref)).put(key, value);
+        saveMap();
+        return key;
+    }
+
+    public static <K, T> K removeFromMap(PreferencesDef pref, K key) {
+        //noinspection unchecked
+        ((Map<K, T>) getPref(pref)).remove(key);
+        saveMap();
+        return key;
+    }
+
     public static <T> T removeFromCollection(PreferencesDef pref, T value) {
         //noinspection unchecked
         ((Collection<T>) getPref(pref)).remove(value);

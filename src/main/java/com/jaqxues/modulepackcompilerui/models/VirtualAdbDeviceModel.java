@@ -102,4 +102,20 @@ public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
         if (isConnected && device != null) i++;
         return i;
     }
+
+    @Override
+    public String getString() {
+        return "VirtualAdbDeviceModel{" +
+                "name='" + name + '\'' +
+                ", serial='" + serial + '\'' +
+                ", pushPath='" + pushPath + '\'' +
+                ", isConnected=" + isConnected +
+                ", isActive=" + isActive +
+                ", device=" + device +
+                '}';
+    }
+
+    public String getDescription() {
+        return name + " (" + serial + ")";
+    }
 }

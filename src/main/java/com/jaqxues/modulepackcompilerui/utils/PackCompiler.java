@@ -21,6 +21,7 @@ import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,6 +34,7 @@ import se.vidstige.jadb.RemoteFile;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
 
 /**
@@ -40,7 +42,8 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BU
  * Date: 07.10.2018 - Time 16:29.
  */
 
-public class PackCompiler extends Task<File> {
+public class PackCompiler {
+    private static AtomicBoolean compiling = new AtomicBoolean();
     private File[] sources;
     private String[] attributes;
     private VirtualAdbDeviceModel[] jadbDevices;
@@ -192,7 +195,16 @@ public class PackCompiler extends Task<File> {
             throw new CMDException("Could not execute Signing");
     }
 
-    public void init() throws Exception {
+    public boolean init() throws Exception {
+        if (compiling.getAndSet(true)) {
+            MiscUtils.showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Module Pack Compiler",
+                    "Already compiling on another thread",
+                    "Unfortunately it is not possible to compile different Packs at the same time."
+            );
+            return false;
+        }
 
         // ========================================================================================
         // Copy Class Files
@@ -208,6 +220,7 @@ public class PackCompiler extends Task<File> {
             );
         } catch (IOException e) {
             LogUtils.getLogger().error("Could not copy Files", e);
+            compiling.set(false);
             throw e;
         }
 
@@ -220,6 +233,7 @@ public class PackCompiler extends Task<File> {
             for (String string : commands)
                 cmdProcess(string);
         } catch (CMDException e) {
+            compiling.set(false);
             throw new NotCompiledException("Error while executing commands in CMD", e);
         }
 
@@ -238,6 +252,8 @@ public class PackCompiler extends Task<File> {
                 );
             }
         }
+        compiling.set(false);
+        return true;
     }
 
     private String[] getCommands(File manifest) {
@@ -264,12 +280,6 @@ public class PackCompiler extends Task<File> {
         writer.flush();
         writer.close();
         return manifest;
-    }
-
-    @Override
-    public File call() throws Exception {
-        init(); // TODO Elegance
-        return null;
     }
 
     public static class Builder {
@@ -336,5 +346,32 @@ public class PackCompiler extends Task<File> {
             }
             return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), (vAdbDevices == null ) ? new VirtualAdbDeviceModel[0] : vAdbDevices.toArray(new VirtualAdbDeviceModel[0]), jarTarget, signConfig);
         }
+    }
+
+    public String getDescription() {
+        File projectRoot = new File((String) getPref(PROJECT_ROOT));
+        StringBuilder sourcesString = new StringBuilder();
+        for (File source : sources) {
+            sourcesString
+                    .append("\n\t\t")
+                    .append(projectRoot.toPath().relativize(source.toPath()).normalize().toString());
+        }
+        StringBuilder attributesString = new StringBuilder();
+        for (String attribute : attributes)
+            attributesString.append("\n\t\t").append(attribute.replace("=", ": "));
+        StringBuilder jadbDevString = new StringBuilder();
+        for (VirtualAdbDeviceModel dev : jadbDevices) {
+            jadbDevString.append("\n\t\t").append(dev.getDescription());
+        }
+        if (jadbDevString.length() == 0)
+            jadbDevString.append("None");
+        return String.format("Module Pack:\n\tProject Root: %s\n\tSources: %s\n\tAdb Devices: %s\n\tJar File: %s\n\tSigning Configuration: %s\n\tAttributes: %s",
+                getPref(PROJECT_ROOT),
+                sourcesString.toString(),
+                jadbDevString.toString(),
+                jarTarget.getAbsolutePath(),
+                signConfig == null ? "None" : signConfig.getString(),
+                attributesString.toString()
+        );
     }
 }

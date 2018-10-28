@@ -1,6 +1,8 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
-import javax.annotation.concurrent.ThreadSafe;
+import java.util.Map;
+
+import javax.annotation.CheckReturnValue;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -8,6 +10,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.layout.Region;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
@@ -41,13 +44,23 @@ public class MiscUtils {
      * Shows a JavaFX alert from any thread.
      *
      * @param alertType Sets the alert type of the error
-     * @param title Title of the Alert
-     * @param header HeaderText of the Alert
-     * @param message ContentText of the Alert
+     * @param title     Title of the Alert
+     * @param header    HeaderText of the Alert
+     * @param message   ContentText of the Alert
      */
     public static void showAlert(Alert.AlertType alertType, String title, String header, String message) {
+        showAlert(alertType, title, header, message, -1d, -1d);
+    }
+    public static void showAlert(Alert.AlertType alertType, String title, String header, String message, double width, double height) {
         Runnable runnable = () -> {
             Alert alert = new Alert(alertType);
+            if (width != -1 && height != -1) {
+                alert.getDialogPane().setMinWidth(Region.USE_PREF_SIZE);
+                alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+                alert.getDialogPane().setPrefSize(width, height);
+                alert.setHeight(height);
+                alert.setWidth(width);
+            }
             alert.setTitle(title);
             alert.setHeaderText(header);
             alert.setContentText(message);
@@ -70,5 +83,13 @@ public class MiscUtils {
                     node.setDisable(false);
             }
         });
+    }
+
+    @CheckReturnValue
+    public static <T, K> Map.Entry<T, K> getEntryFromMap(Map<T, K> map, T key) {
+        for (Map.Entry<T, K> entry : map.entrySet())
+            if (entry.getKey().equals(key))
+                return entry;
+        return null;
     }
 }
