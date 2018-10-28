@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -50,6 +51,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.util.Callback;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToMap;
@@ -639,7 +641,6 @@ public class Controller {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("General Settings");
         dialog.setHeaderText("Adb Settings");
-        dialog.setWidth(400d);
 
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
@@ -648,10 +649,12 @@ public class Controller {
 
         TableView<VirtualAdbDeviceModel> tableView = new TableView<>();
         TableColumn<VirtualAdbDeviceModel, String> deviceName = new TableColumn<>();
+        deviceName.setText("Device Name");
         deviceName.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getName())
         );
         TableColumn<VirtualAdbDeviceModel, String> pushPath = new TableColumn<>();
+        pushPath.setText("Push Path");
         pushPath.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getPushPath())
         );
@@ -673,9 +676,37 @@ public class Controller {
                 buttonBar.getButtons().get(2)
         );
 
+        buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event ->
+                new Thread(() -> {
+                    for (VirtualAdbDeviceModel adbDeviceModel : AdbUtils.getDevices()) {
+                        if (!tableView.getItems().contains(adbDeviceModel))
+                            tableView.getItems().add(adbDeviceModel);
+                    }
+                }).start());
+        buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event ->
+                adbDeviceDialog(tableView.getSelectionModel().getSelectedItem(), new Runnable() {
+                    @Override
+                    public void run() {
+                        tableView.refresh();
+                    }
+                })
+        );
+        buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event -> {
+                    VirtualAdbDeviceModel deviceModel = tableView.getSelectionModel().getSelectedItem();
+                    tableView.getItems().remove(deviceModel);
+                    AdbUtils.getDevices().remove(deviceModel);
+                }
+        );
+        buttonBar.getButtons().get(3).addEventHandler(ActionEvent.ANY, event -> {
+            VirtualAdbDeviceModel model = tableView.getSelectionModel().getSelectedItem();
+            ((Button) buttonBar.getButtons().get(3)).setText(model.setActive(!model.isActive()) ? "Disable" : "Activate");
+            tableView.refresh();
+        });
+
         VBox vBox = new VBox(tableView, buttonBar);
         vBox.setPadding(new Insets(10d));
         vBox.setSpacing(10d);
+        vBox.setPrefWidth(700d);
 
         dialog.getDialogPane().setContent(vBox);
 
@@ -704,6 +735,54 @@ public class Controller {
 
         dialog.getDialogPane().setContent(vBox);
 
+        dialog.show();
+    }
+
+    private void adbDeviceDialog(VirtualAdbDeviceModel deviceModel, Runnable runnable) {
+        if (deviceModel == null)
+            return;
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Adb Devices");
+        dialog.setHeaderText("Edit Name and Push Path of an Adb Device");
+        dialog.getDialogPane().getButtonTypes().addAll(
+                ButtonType.APPLY,
+                ButtonType.CANCEL
+        );
+
+        TextField devName = new TextField();
+        devName.setPromptText("Device Name");
+        devName.setText(deviceModel.getName());
+        TextField pushPath = new TextField();
+        pushPath.setPromptText("Push Path");
+        pushPath.setText(deviceModel.getPushPath());
+
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10d));
+        grid.setHgap(10d);
+        grid.setVgap(10d);
+        grid.add(new Label("Device Name"), 0, 0);
+        grid.add(devName, 1, 0);
+        grid.add(new Label("Push Path"), 0, 1);
+        grid.add(pushPath, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(param -> {
+            if (param != ButtonType.APPLY)
+                return null;
+            if (!pushPath.getText().trim().isEmpty() && !devName.getText().trim().isEmpty()) {
+                deviceModel.setPushPath(pushPath.getText().trim());
+                deviceModel.setName(devName.getText().trim());
+                runnable.run();
+                return null;
+            }
+            MiscUtils.showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Adb Devices",
+                    "Use of empty values",
+                    "You cannot provide empty values for this"
+            );
+            return null;
+        });
         dialog.show();
     }
 

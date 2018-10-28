@@ -68,8 +68,13 @@ public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
         isConnected = connected;
     }
 
-    public void setActive(boolean isActive) {
+    public boolean setActive(boolean isActive) {
         this.isActive = isActive;
+        return isActive;
+    }
+
+    public boolean isActive() {
+        return isActive;
     }
 
     public JadbDevice getDevice() {
@@ -97,9 +102,10 @@ public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
 
     @Override
     public int tableRowColor() {
-        int i = 0;
-        if (isActive) i += 2;
-        if (isConnected && device != null) i++;
+        if (!isActive) return 0;
+        int i = 3;
+        if (isConnected) i--;
+        if (device != null) i--;
         return i;
     }
 

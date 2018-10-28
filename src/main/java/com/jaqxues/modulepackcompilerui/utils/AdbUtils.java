@@ -19,7 +19,7 @@ import se.vidstige.jadb.JadbDevice;
  */
 
 public class AdbUtils {
-    private static List<VirtualAdbDeviceModel> adbDevices = new ArrayList<>();
+    private static List<VirtualAdbDeviceModel> adbDevices = new ArrayList<>(); // Deserialize from Json in Models.json (migrate SavedConfig.json)
     private static boolean isInitialized = false;
     private static JadbConnection connection = new JadbConnection();
 
