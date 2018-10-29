@@ -249,7 +249,8 @@ public class PackCompiler {
             copySources(compiledPath, sources);
 
             FileUtils.copyFile(
-                    getClass().getResource("/freshCompiledDevJar.jar").openStream(),
+                    // Since shadowJar cannot distinguish between .jar "assets" in /resources and dependencies, we need to shadow it with another file extension
+                    getClass().getResourceAsStream("/freshCompiledDevJar.jar.file"),
                     preCompiledSToolsJar,
                     StandardCopyOption.REPLACE_EXISTING
             );
