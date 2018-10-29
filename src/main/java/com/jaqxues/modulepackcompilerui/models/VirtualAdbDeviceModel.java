@@ -14,7 +14,7 @@ import se.vidstige.jadb.JadbDevice;
 
 public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
 
-    public static final String PUSH_PATH_DEFAULT = "/sdcard/ModulePack/";
+    public static final String PUSH_PATH_DEFAULT = "/sdcard/SnapTools/ModulePacks/";
     @SerializedName("Name")
     private String name;
     @SerializedName("Serial")

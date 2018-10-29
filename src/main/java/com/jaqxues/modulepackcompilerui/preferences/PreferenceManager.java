@@ -131,6 +131,11 @@ public class PreferenceManager {
         saveMap();
     }
 
+    public static void clearMap(PreferencesDef pref) {
+        ((Map) getPref(pref)).clear();
+        saveMap();
+    }
+
     /**
      * Helper to toggle Boolean Preference
      *

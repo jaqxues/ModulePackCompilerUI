@@ -54,6 +54,7 @@ import javafx.stage.FileChooser;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToMap;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearCollection;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.clearMap;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.putPref;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.removeFromCollection;
@@ -707,6 +708,7 @@ public class Controller {
         buttonBar.getButtons().get(3).addEventHandler(ActionEvent.ANY, event -> {
             VirtualAdbDeviceModel model = tableView.getSelectionModel().getSelectedItem();
             ((Button) buttonBar.getButtons().get(3)).setText(model.setActive(!model.isActive()) ? "Disable" : "Activate");
+            AdbUtils.refresh();
             tableView.refresh();
             if (model.isActive() &&(!model.isConnected() || model.getDevice() == null))
                 MiscUtils.showAlert(
@@ -970,7 +972,6 @@ public class Controller {
     }
 
     public void compileModPack(ActionEvent event) {
-        // TODO
         String preferenceCheck = checkPreferences();
         if (preferenceCheck != null) {
             MiscUtils.showAlert(
@@ -994,10 +995,12 @@ public class Controller {
 
         new Thread(() -> {
             try {
+                String snaptoolsJar = PackCompiler.getSTFileNameFromTemplate(attrTable.getItems());
                 PackCompiler packCompiler = new PackCompiler.Builder()
                         .setAttributes(attrTable.getItems())
-                        .setJarTarget(new File("Files/Packs/STModulePack")) // TODO Use File From Template
+                        .setJarTarget(new File(snaptoolsJar.isEmpty() ? "Files/Packs/Pack" : "Files/Packs/" + snaptoolsJar))
                         .setSignConfig(getActiveSigning())
+                        .setVirtualAdbDevices(AdbUtils.getActiveDevices())
                         .setSources(sources)
                         .build();
                 LogUtils.getLogger().debug("Built PackCompiler Instance, Executing task...");
@@ -1134,7 +1137,9 @@ public class Controller {
     public void resetCurrentPrefs(ActionEvent event) {
         attrTable.getItems().clear();
         clearCollection(ATTRIBUTES);
-        // TODO Finish Resetting Current Config
+        clearMap(FILE_SOURCES);
+        putPref(PROJECT_ROOT, "");
+        putPref(MODULE_PACKAGE, "");
     }
 
     public void adbPushSettings(ActionEvent event) {

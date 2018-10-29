@@ -138,6 +138,32 @@ public class PackCompiler {
         return exceptions;
     }
 
+    public static String getSTFileNameFromTemplate(List<String> attributes) {
+        String type = null;
+        String scVersion = null;
+        String flavour = null;
+        String packVersion = null;
+        for (String attribute : attributes) {
+            switch (attribute.split("=")[0]) {
+                case "Flavour":
+                    flavour = attribute.split("=", 2)[1].trim();
+                    break;
+                case "Type":
+                    type = attribute.split("=", 2)[1].trim();
+                    break;
+                case "SCVersion":
+                    scVersion = attribute.split("=", 2)[1].trim();
+                    break;
+                case "PackVersion":
+                    packVersion = attribute.split("=", 2)[1].trim();
+                    break;
+            }
+        }
+        if (type == null || scVersion == null || flavour == null)
+            return "";
+        return getSTFileNameFromTemplate(type, scVersion, flavour, packVersion);
+    }
+
     /**
      * Copy from the SnapTools Project
      * ===========================================================================
@@ -378,11 +404,12 @@ public class PackCompiler {
         }
         if (jadbDevString.length() == 0)
             jadbDevString.append("None");
-        return String.format("Module Pack:\n\tProject Root: %s\n\tSources: %s\n\tAdb Devices: %s\n\tJar File: %s\n\tSigning Configuration: %s\n\tAttributes: %s",
+        return String.format("Module Pack: %s\n\tProject Root: %s\n\tSources: %s\n\tAdb Devices: %s\n\tPack Directory: %s\n\tSigning Configuration: %s\n\tAttributes: %s",
+                jarTarget.getName() + (signed ? ".jar" : "_unsigned.jar"),
                 getPref(PROJECT_ROOT),
                 sourcesString.toString(),
                 jadbDevString.toString(),
-                jarTarget.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar"),
+                jarTarget.getParentFile().getAbsolutePath(),
                 signConfig == null ? "None" : signConfig.getString(),
                 attributesString.toString()
         );

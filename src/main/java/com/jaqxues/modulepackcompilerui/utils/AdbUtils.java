@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import javafx.collections.FXCollections;
@@ -73,6 +72,10 @@ public class AdbUtils {
         return Collections.emptyList();
     }
 
+    public static List<VirtualAdbDeviceModel> getActiveDevices() {
+        return adbDevices.filtered(model -> model.isActive() && model.getDevice() != null);
+    }
+
     private static void setWatcher() {
         try {
             if (Runtime.getRuntime().exec("adb start-server").waitFor() != 0) {
@@ -113,19 +116,13 @@ public class AdbUtils {
 
     public static boolean removeDevice(VirtualAdbDeviceModel model) {
         adbDevices.remove(model);
-        JsonArray array = getConfigJson();
-        Iterator<JsonElement> iterator = array.iterator();
-        while (iterator.hasNext())
-            if (iterator.next().getAsJsonObject().get("Serial").getAsString().equals(model.getSerial())) {
-                iterator.remove();
-                return true;
-            }
+        saveJson(GsonSingleton.getSingleton().toJsonTree(adbDevices));
         return false;
     }
 
     public static List<VirtualAdbDeviceModel> refresh() {
         for (VirtualAdbDeviceModel virtualAdbDeviceModel : adbDevices) {
-                virtualAdbDeviceModel.refresh();
+            virtualAdbDeviceModel.refresh();
         }
         bindDevices(getConnectedDevices(), adbDevices);
         saveJson(GsonSingleton.getSingleton().toJsonTree(adbDevices));
