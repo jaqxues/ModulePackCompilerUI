@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.Key;
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import se.vidstige.jadb.JadbDevice;
 import se.vidstige.jadb.RemoteFile;
@@ -48,6 +46,7 @@ public class PackCompiler {
     private String[] attributes;
     private VirtualAdbDeviceModel[] jadbDevices;
     private File jarTarget;
+    private boolean signed = false;
     private SignConfigModel signConfig;
     private File currentPath = new File("Files/Process");
     private File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
@@ -124,13 +123,13 @@ public class PackCompiler {
      * @param vAdbDevs The devices that the file should be pushed to
      * @return A bundled List of all Exceptions that occurred as the program should still try to copy the Files to the other devices.
      */
-    private static List<Exception> adbPush(File file, VirtualAdbDeviceModel[] vAdbDevs) {
+    private List<Exception> adbPush(File file, VirtualAdbDeviceModel[] vAdbDevs) {
         List<Exception> exceptions = new ArrayList<>();
         for (VirtualAdbDeviceModel vAdbDev : vAdbDevs) {
             if (vAdbDev.isConnected()) {
                 JadbDevice jadbDevice = vAdbDev.getDevice();
                 try {
-                    jadbDevice.push(file, new RemoteFile(vAdbDev.getPushPath() + file.getName()));
+                    jadbDevice.push(new File(file.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar")), new RemoteFile(vAdbDev.getPushPath() + file.getName()));
                 } catch (Exception e) {
                     exceptions.add(e);
                 }
@@ -176,6 +175,15 @@ public class PackCompiler {
      * @throws Exception Runtime Exception while running command and Signing the Jar
      */
     private void signOutput() throws Exception {
+        try {
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(new FileInputStream(signConfig.getStorePath()), signConfig.getStorePassword().toCharArray());
+            if (keyStore.getKey(signConfig.getKeyAlias(), signConfig.getKeyPassword().toCharArray()) == null) {
+                throw new NotCompiledException("KeyStore and Key Information not correct.");
+            }
+        } catch (Exception e) {
+            throw new NotCompiledException("KeyStore and Key Information not correct.");
+        }
         String command = String.format("\"%s\\bin\\jarsigner.exe\" -tsa http://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
                 getPref(JDK_INSTALLATION_PATH),
                 signConfig.getStorePath(),
@@ -193,6 +201,7 @@ public class PackCompiler {
         outputStreamWriter.close();
         if (process.waitFor() != 0)
             throw new CMDException("Could not execute Signing");
+        signed = true;
     }
 
     public boolean init() throws Exception {
@@ -254,6 +263,10 @@ public class PackCompiler {
         }
         compiling.set(false);
         return true;
+    }
+
+    public static void setCompiling(boolean compiling) {
+        PackCompiler.compiling.set(compiling);
     }
 
     private String[] getCommands(File manifest) {
@@ -369,7 +382,7 @@ public class PackCompiler {
                 getPref(PROJECT_ROOT),
                 sourcesString.toString(),
                 jadbDevString.toString(),
-                jarTarget.getAbsolutePath(),
+                jarTarget.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar"),
                 signConfig == null ? "None" : signConfig.getString(),
                 attributesString.toString()
         );

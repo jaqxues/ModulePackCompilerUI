@@ -1,6 +1,5 @@
 package com.jaqxues.modulepackcompilerui.models;
 
-import com.google.common.base.MoreObjects;
 import com.google.gson.annotations.SerializedName;
 import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 

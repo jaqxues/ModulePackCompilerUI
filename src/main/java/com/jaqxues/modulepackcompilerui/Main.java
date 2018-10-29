@@ -5,6 +5,7 @@ import com.jaqxues.modulepackcompilerui.preferences.PreferenceManager;
 import java.lang.ref.WeakReference;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -17,6 +18,13 @@ import javafx.stage.Stage;
  */
 
 public class Main extends Application {
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+        Platform.exit();
+        System.exit(0);
+    }
+
     private static WeakReference<Stage> stage;
 
     public static void main(String[] args) {

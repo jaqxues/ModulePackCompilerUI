@@ -1,13 +1,23 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import se.vidstige.jadb.DeviceDetectionListener;
 import se.vidstige.jadb.JadbConnection;
@@ -19,11 +29,13 @@ import se.vidstige.jadb.JadbDevice;
  */
 
 public class AdbUtils {
-    private static List<VirtualAdbDeviceModel> adbDevices = new ArrayList<>(); // Deserialize from Json in Models.json (migrate SavedConfig.json)
+
+    public static final String JSON_FILE = "Files/Models/AdbDevices.json";
+    private static ObservableList<VirtualAdbDeviceModel> adbDevices = FXCollections.observableList(new ArrayList<>());
     private static boolean isInitialized = false;
     private static JadbConnection connection = new JadbConnection();
 
-    public static List<VirtualAdbDeviceModel> getDevices() {
+    public static ObservableList<VirtualAdbDeviceModel> getDevices() {
         init();
         return adbDevices;
     }
@@ -33,6 +45,11 @@ public class AdbUtils {
             return;
         isInitialized = true;
         LogUtils.getLogger().debug("Starting Adb-Server");
+        JsonArray array = getConfigJson();
+        if (array.size() != 0) {
+            for (int i = 0; i < array.size(); i++)
+                adbDevices.add(GsonSingleton.getSingleton().fromJson(array.get(i), VirtualAdbDeviceModel.class));
+        }
         if (startServer()) {
             LogUtils.getLogger().debug("Initializing AdbDevices and Device Watcher");
             bindDevices(getConnectedDevices(), adbDevices);
@@ -70,7 +87,9 @@ public class AdbUtils {
             connection.createDeviceWatcher(new DeviceDetectionListener() {
                 @Override
                 public void onDetect(List<JadbDevice> devices) {
-                    LogUtils.getLogger().debug("New devices have been detected.", Arrays.deepToString(devices.toArray()));
+                    if (devices == null || devices.isEmpty())
+                        return;
+                    LogUtils.getLogger().debug("New devices have been detected." + Arrays.deepToString(devices.toArray()));
                     if (bindDevices(devices, adbDevices) > 0) {
                         MiscUtils.showAlert(
                                 Alert.AlertType.INFORMATION,
@@ -85,16 +104,31 @@ public class AdbUtils {
                 public void onException(Exception e) {
                     LogUtils.getLogger().error("Exception in DeviceDetectionListener", e);
                 }
-            });
+            }).run();
             LogUtils.getLogger().debug("Successfully setup device watcher");
         } catch (Exception e) {
-//            if (!(e instanceof ConnectException))
             LogUtils.getLogger().error("Unable to setup device watcher", e);
         }
     }
 
+    public static boolean removeDevice(VirtualAdbDeviceModel model) {
+        adbDevices.remove(model);
+        JsonArray array = getConfigJson();
+        Iterator<JsonElement> iterator = array.iterator();
+        while (iterator.hasNext())
+            if (iterator.next().getAsJsonObject().get("Serial").getAsString().equals(model.getSerial())) {
+                iterator.remove();
+                return true;
+            }
+        return false;
+    }
+
     public static List<VirtualAdbDeviceModel> refresh() {
-        isInitialized = false;
+        for (VirtualAdbDeviceModel virtualAdbDeviceModel : adbDevices) {
+                virtualAdbDeviceModel.refresh();
+        }
+        bindDevices(getConnectedDevices(), adbDevices);
+        saveJson(GsonSingleton.getSingleton().toJsonTree(adbDevices));
         return getDevices();
     }
 
@@ -123,6 +157,8 @@ public class AdbUtils {
                 adbDevices.add(new VirtualAdbDeviceModel(device));
             }
         }
+        if (newDevs != 0)
+            saveJson(GsonSingleton.getSingleton().toJsonTree(adbDevices));
         return newDevs;
     }
 
@@ -139,5 +175,45 @@ public class AdbUtils {
             LogUtils.getLogger().error("Unable to start adb server", e);
         }
         return false;
+    }
+
+
+    private static JsonArray getConfigJson() {
+        JsonParser jsonParser = new JsonParser();
+        File file = new File(JSON_FILE);
+        try {
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+                overwriteFile();
+            }
+
+            FileReader reader = new FileReader(JSON_FILE);
+            return jsonParser.parse(reader).getAsJsonArray();
+        } catch (IOException e) {
+            LogUtils.getLogger().error("Could not parse AdbDevices json", e);
+        } catch (JsonParseException | IllegalStateException e) {
+            LogUtils.getLogger().error("AdbDevices Json Corrupted, unable to parse file", e);
+            overwriteFile();
+        }
+        return new JsonArray();
+    }
+
+    private static void overwriteFile() {
+        try (FileWriter writer = new FileWriter(JSON_FILE)) {
+            writer.write("[]");
+            writer.flush();
+        } catch (IOException e) {
+            LogUtils.getLogger().error("Unable to over-write corrupted Json File", e);
+        }
+    }
+
+    private static void saveJson(JsonElement element) {
+        try (FileWriter writer = new FileWriter(JSON_FILE)) {
+            writer.write(element.toString());
+            writer.flush();
+        } catch (IOException e) {
+            LogUtils.getLogger().error("Unable to save AdbUtils Json", e);
+        }
     }
 }

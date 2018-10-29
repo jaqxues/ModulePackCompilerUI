@@ -2,6 +2,7 @@ package com.jaqxues.modulepackcompilerui.models;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.SerializedName;
+import com.jaqxues.modulepackcompilerui.utils.ExcludeSerialization;
 import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
 import se.vidstige.jadb.JadbDevice;
@@ -20,13 +21,12 @@ public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
     private String serial;
     @SerializedName("PushPath")
     private String pushPath;
-    @SerializedName("IsConnected")
+    @ExcludeSerialization
     private boolean isConnected;
     @SerializedName("IsActive")
     private boolean isActive;
+    @ExcludeSerialization
     private JadbDevice device;
-
-    public VirtualAdbDeviceModel() {}
 
     public VirtualAdbDeviceModel(JadbDevice jadbDevice) {
         this.name = jadbDevice.toString();
@@ -91,6 +91,11 @@ public class VirtualAdbDeviceModel implements RowCellFactory.ColorStateManager {
             throw new IllegalArgumentException("Serial Number not corresponding current Virtual Device");
         this.device = jadbDevice;
         isConnected = true;
+    }
+
+    public void refresh() {
+        if (device == null)
+            isConnected = false;
     }
 
     @Override

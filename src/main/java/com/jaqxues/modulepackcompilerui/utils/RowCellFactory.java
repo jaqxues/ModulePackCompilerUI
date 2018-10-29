@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Map;
 
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TableRow;
 
@@ -18,27 +17,6 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJEC
  */
 
 public class RowCellFactory {
-
-    public static <T extends ActiveStateManager> ListCell<T> getAStateListCell() {
-        return new ListCell<T>() {
-            private String getColor(boolean selected) {
-                if (selected)
-                    return getPref(DARK_THEME) ? "darkgreen" : "green";
-                return getPref(DARK_THEME) ? "green" : "lightgreen";
-            }
-
-            @Override
-            protected void updateItem(T item, boolean empty) {
-                super.updateItem(item, empty);
-                if (!empty)
-                    setText(item.getString());
-                if (!empty && item.active()) {
-                    setStyle("-fx-background-color: " + getColor(false));
-                    selectedProperty().addListener((observable, oldValue, newValue) -> setStyle("-fx-background-color: " + getColor(newValue)));
-                }
-            }
-        };
-    }
 
     public static <T extends ActiveStateManager> TableRow<T> getAStateTableRow() {
         return new TableRow<T>() {
@@ -91,7 +69,7 @@ public class RowCellFactory {
                 setText(item.getKey());
                 switch (sourceState(item)) {
                     case 3:
-                        setBgRow("red", "darkred");
+                        setBgRow(getPref(DARK_THEME) ? "red" : "rgba(255,0,6,0.64)", getPref(DARK_THEME) ? "darkred" : "red");
                         break;
                     case 2:
                         setBgRow("orange", "darkorange");
@@ -111,12 +89,6 @@ public class RowCellFactory {
 
     private static int sourceState(Map.Entry<String, Boolean> entry) {
         return (entry.getValue() ? new File((String) getPref(PROJECT_ROOT)).exists() ? 1 : 3 : 0);
-    }
-
-    public static <T extends ColorStateManager> ListCell<T> getCStateListCell() {
-        return new ListCell<T>() {
-
-        };
     }
 
     public static <T extends ColorStateManager> TableRow<T> getCStateTableRow() {
@@ -139,7 +111,7 @@ public class RowCellFactory {
                 setText(item.getString());
                 switch (item.tableRowColor()) {
                     case 3:
-                        setBgRow("red", "darkred");
+                        setBgRow(getPref(DARK_THEME) ? "red" : "rgba(255,0,6,0.64)", getPref(DARK_THEME) ? "darkred" : "red");
                         break;
                     case 2:
                         setBgRow("orange", "darkorange");

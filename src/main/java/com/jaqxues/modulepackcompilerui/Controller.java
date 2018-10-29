@@ -22,7 +22,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -51,7 +50,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.util.Callback;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToCollection;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.addToMap;
@@ -658,9 +656,15 @@ public class Controller {
         pushPath.setCellValueFactory(param ->
                 new SimpleStringProperty(param.getValue().getPushPath())
         );
+        TableColumn<VirtualAdbDeviceModel, String> serial = new TableColumn<>();
+        serial.setText("Serial Number");
+        serial.setCellValueFactory(param ->
+                new SimpleStringProperty(param.getValue().getSerial())
+        );
         tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tableView.getColumns().add(deviceName);
         tableView.getColumns().add(pushPath);
+        tableView.getColumns().add(serial);
         tableView.setRowFactory(tv -> RowCellFactory.getCStateTableRow());
 
         ButtonBar buttonBar = new ButtonBar();
@@ -673,7 +677,8 @@ public class Controller {
         MiscUtils.temporaryDisable(
                 tableView.getSelectionModel().selectedItemProperty(),
                 buttonBar.getButtons().get(1),
-                buttonBar.getButtons().get(2)
+                buttonBar.getButtons().get(2),
+                buttonBar.getButtons().get(3)
         );
 
         buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event ->
@@ -684,23 +689,32 @@ public class Controller {
                     }
                 }).start());
         buttonBar.getButtons().get(1).addEventHandler(ActionEvent.ANY, event ->
-                adbDeviceDialog(tableView.getSelectionModel().getSelectedItem(), new Runnable() {
-                    @Override
-                    public void run() {
-                        tableView.refresh();
-                    }
+                adbDeviceDialog(tableView.getSelectionModel().getSelectedItem(), () -> {
+                    AdbUtils.refresh();
+                    tableView.refresh();
                 })
         );
         buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event -> {
-                    VirtualAdbDeviceModel deviceModel = tableView.getSelectionModel().getSelectedItem();
-                    tableView.getItems().remove(deviceModel);
-                    AdbUtils.getDevices().remove(deviceModel);
-                }
-        );
+                    AdbUtils.removeDevice(tableView.getSelectionModel().getSelectedItem());
+                    if (AdbUtils.getDevices().isEmpty())
+                        MiscUtils.temporaryDisable(
+                                tableView.getSelectionModel().selectedItemProperty(),
+                                buttonBar.getButtons().get(1),
+                                buttonBar.getButtons().get(2),
+                                buttonBar.getButtons().get(3)
+                        );
+        });
         buttonBar.getButtons().get(3).addEventHandler(ActionEvent.ANY, event -> {
             VirtualAdbDeviceModel model = tableView.getSelectionModel().getSelectedItem();
             ((Button) buttonBar.getButtons().get(3)).setText(model.setActive(!model.isActive()) ? "Disable" : "Activate");
             tableView.refresh();
+            if (model.isActive() &&(!model.isConnected() || model.getDevice() == null))
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Adb Devices",
+                        "Device Not Connected",
+                        "It seems like this device is not connected."
+                );
         });
 
         VBox vBox = new VBox(tableView, buttonBar);
@@ -710,7 +724,7 @@ public class Controller {
 
         dialog.getDialogPane().setContent(vBox);
 
-        new Thread(() -> tableView.getItems().addAll(AdbUtils.getDevices())).start();
+        new Thread(() -> tableView.setItems((AdbUtils.getDevices()))).start();
 
         dialog.show();
     }
@@ -997,7 +1011,7 @@ public class Controller {
                                 "ModulePack Compiler",
                                 "Successfully compiled Module Pack",
                                 packCompiler.getDescription(),
-                                1200d,
+                                900d,
                                 400d
                         );
                     });
@@ -1016,6 +1030,7 @@ public class Controller {
                     progressBar.setVisible(false);
                 });
             }
+            PackCompiler.setCompiling(false);
         }).start();
     }
 

@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class SavedConfigModel {
 
-    private static final String JSON_FILE = "Files/SavedConfig.json";
+    private static final String JSON_FILE = "Files/Models/SavedConfig.json";
 
     @SerializedName("SavedConfigName")
     public String savedConfigName;
@@ -127,6 +127,7 @@ public class SavedConfigModel {
         File file = new File(JSON_FILE);
         try {
             if (!file.exists()) {
+                file.getParentFile().mkdirs();
                 file.createNewFile();
                 overwriteFile();
             }
