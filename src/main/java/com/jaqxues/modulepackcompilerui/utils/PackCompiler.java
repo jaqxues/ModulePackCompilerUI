@@ -6,7 +6,6 @@ import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -16,7 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -201,15 +199,9 @@ public class PackCompiler {
      * @throws Exception Runtime Exception while running command and Signing the Jar
      */
     private void signOutput() throws Exception {
-        try {
-            KeyStore keyStore = KeyStore.getInstance("JKS");
-            keyStore.load(new FileInputStream(signConfig.getStorePath()), signConfig.getStorePassword().toCharArray());
-            if (keyStore.getKey(signConfig.getKeyAlias(), signConfig.getKeyPassword().toCharArray()) == null) {
-                throw new NotCompiledException("KeyStore and Key Information not correct.");
-            }
-        } catch (Exception e) {
-            throw new NotCompiledException("KeyStore and Key Information not correct.");
-        }
+        String checkedKey = MiscUtils.checkSignKey(signConfig);
+        if (checkedKey != null)
+            throw new NotCompiledException(checkedKey);
         String command = String.format("\"%s\\bin\\jarsigner.exe\" -tsa http://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
                 getPref(JDK_INSTALLATION_PATH),
                 signConfig.getStorePath(),

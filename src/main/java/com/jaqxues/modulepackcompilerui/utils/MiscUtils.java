@@ -1,5 +1,13 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
+import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.UnrecoverableKeyException;
 import java.util.Map;
 
 import javax.annotation.CheckReturnValue;
@@ -91,5 +99,32 @@ public class MiscUtils {
             if (entry.getKey().equals(key))
                 return entry;
         return null;
+    }
+
+    public static String checkSignKey(SignConfigModel signConfigModel) {
+        Key key = null;
+        try {
+            if (!new File(signConfigModel.getStorePath()).exists())
+                return "Keystore File does not exist";
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(new FileInputStream(signConfigModel.getStorePath()), signConfigModel.getStorePassword().toCharArray());
+            if (!keyStore.isKeyEntry(signConfigModel.getKeyAlias())) {
+                LogUtils.getLogger().error("Keystore does not contain this Key Alias");
+                return "Keystore does not contain this Key Alias";
+            }
+            key = keyStore.getKey(signConfigModel.getKeyAlias(), signConfigModel.getKeyPassword().toCharArray());
+        } catch (UnrecoverableKeyException e) {
+            LogUtils.getLogger().error("Key Password not correct");
+            return "Key Password not correct";
+        } catch (IOException e) {
+            if (e.getCause() instanceof UnrecoverableKeyException) {
+                LogUtils.getLogger().error("Keystore Password not correct");
+                return "Keystore Password not correct";
+            }
+            LogUtils.getLogger().error("Unable to load key");
+        } catch (Exception e) {
+            LogUtils.getLogger().error(null, e);
+        }
+        return key != null ? null : "An unknown exception occurred while trying to instantiate a Key with given Values";
     }
 }

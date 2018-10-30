@@ -11,9 +11,6 @@ import com.jaqxues.modulepackcompilerui.utils.PackCompiler;
 import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.security.Key;
-import java.security.KeyStore;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -390,6 +387,36 @@ public class Controller {
         keyAlias.setPromptText("Key Alias");
         TextField keyPassword = new TextField();
         keyPassword.setPromptText("Key Password");
+        Button checkValues = new Button();
+        checkValues.setText("Check Values");
+        checkValues.setOnAction(event -> {
+            if (storePath.getText().trim().isEmpty()
+                    || storePassword.getText().trim().isEmpty()
+                    || keyAlias.getText().trim().isEmpty()
+                    || keyPassword.getText().trim().isEmpty()) {
+                MiscUtils.showAlert(
+                        Alert.AlertType.INFORMATION,
+                        "Signing Configurations",
+                        "Empty Values",
+                        "No empty values are allowed"
+                );
+                return;
+            }
+            String checked = MiscUtils.checkSignKey(
+                    new SignConfigModel(
+                            storePath.getText().trim(),
+                            storePassword.getText().trim(),
+                            keyAlias.getText().trim(),
+                            keyPassword.getText().trim()
+                    )
+            );
+            MiscUtils.showAlert(
+                    checked == null ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
+                    "Signing Configurations",
+                    "Values " + (checked == null ? "" : "not ") + "correct",
+                    checked == null ? "Values correct!" : checked + ". Please check the given values."
+            );
+        });
         if (edit) {
             storePath.setText(oldConfig.getStorePath());
             storePassword.setText(oldConfig.getStorePassword());
@@ -417,6 +444,7 @@ public class Controller {
         grid.add(keyAlias, 1, 2);
         grid.add(new Label("Key Password"), 0, 3);
         grid.add(keyPassword, 1, 3);
+        grid.add(checkValues, 0, 4, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -435,16 +463,16 @@ public class Controller {
                         keyAlias.getText().trim(),
                         keyPassword.getText().trim()
                 );
-                if (getSignKey(signConfigModel) == null) {
-                    MiscUtils.showAlert(
-                            Alert.AlertType.ERROR,
-                            "Signing Configuration",
-                            "Unable to load Key",
-                            "The values of this SignConfig are invalid; Key cannot be instantiated"
-                    );
-                    return null;
-                }
-                return signConfigModel;
+                String message = MiscUtils.checkSignKey(signConfigModel);
+                if (message == null)
+                    return signConfigModel;
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Signing Configurations",
+                        "Error while checking Key Values",
+                        message + ". Please check the given values"
+                );
+                return null;
             }
             MiscUtils.showAlert(
                     Alert.AlertType.ERROR,
@@ -696,21 +724,21 @@ public class Controller {
                 })
         );
         buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event -> {
-                    AdbUtils.removeDevice(tableView.getSelectionModel().getSelectedItem());
-                    if (AdbUtils.getDevices().isEmpty())
-                        MiscUtils.temporaryDisable(
-                                tableView.getSelectionModel().selectedItemProperty(),
-                                buttonBar.getButtons().get(1),
-                                buttonBar.getButtons().get(2),
-                                buttonBar.getButtons().get(3)
-                        );
+            AdbUtils.removeDevice(tableView.getSelectionModel().getSelectedItem());
+            if (AdbUtils.getDevices().isEmpty())
+                MiscUtils.temporaryDisable(
+                        tableView.getSelectionModel().selectedItemProperty(),
+                        buttonBar.getButtons().get(1),
+                        buttonBar.getButtons().get(2),
+                        buttonBar.getButtons().get(3)
+                );
         });
         buttonBar.getButtons().get(3).addEventHandler(ActionEvent.ANY, event -> {
             VirtualAdbDeviceModel model = tableView.getSelectionModel().getSelectedItem();
             ((Button) buttonBar.getButtons().get(3)).setText(model.setActive(!model.isActive()) ? "Disable" : "Activate");
             AdbUtils.refresh();
             tableView.refresh();
-            if (model.isActive() &&(!model.isConnected() || model.getDevice() == null))
+            if (model.isActive() && (!model.isConnected() || model.getDevice() == null))
                 MiscUtils.showAlert(
                         Alert.AlertType.ERROR,
                         "Adb Devices",
@@ -1216,18 +1244,5 @@ public class Controller {
             if (signC.active())
                 i++;
         return i;
-    }
-
-    @Nullable
-    private Key getSignKey(SignConfigModel signConfigModel) {
-        Key key = null;
-        try {
-            KeyStore keyStore = KeyStore.getInstance("JKS");
-            keyStore.load(new FileInputStream(signConfigModel.getStorePath()), signConfigModel.getStorePassword().toCharArray());
-            key = keyStore.getKey(signConfigModel.getKeyAlias(), signConfigModel.getKeyPassword().toCharArray());
-        } catch (Exception e) {
-            LogUtils.getLogger().error("SignConfig invalid", e);
-        }
-        return key;
     }
 }
