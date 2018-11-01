@@ -302,11 +302,9 @@ public class PackCompiler {
             manifest.createNewFile();
         FileWriter writer = new FileWriter(manifest);
         StringBuilder builder = new StringBuilder();
-        String prefix = "";
         for (String string : attributes) {
-            builder.append(prefix)
-                    .append(string.replace("=", ": "));
-            prefix = "\n";
+            builder.append(string.replace("=", ": "))
+                    .append("\n");
         }
         writer.write(builder.toString());
         writer.flush();
