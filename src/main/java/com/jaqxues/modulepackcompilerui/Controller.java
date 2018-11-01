@@ -310,8 +310,8 @@ public class Controller {
             String valueTxt = value.getText().trim();
             if (!nameTxt.isEmpty() && !valueTxt.isEmpty()) {
 
-                if (!nameTxt.matches("^[a-zA-Z0-9]+$") ||
-                        !valueTxt.matches("^[a-zA-Z0-9]+$")) {
+                if (!nameTxt.matches("^[a-zA-Z0-9]+.+$") ||
+                        !valueTxt.matches("^[a-zA-Z0-9]+.+$")) {
                     MiscUtils.showAlert(
                             Alert.AlertType.INFORMATION,
                             "Attributes Manager",
@@ -444,7 +444,8 @@ public class Controller {
         grid.add(keyAlias, 1, 2);
         grid.add(new Label("Key Password"), 0, 3);
         grid.add(keyPassword, 1, 3);
-        grid.add(checkValues, 0, 4, 2, 1);
+        grid.add(new Label("Check Correct Values"), 0, 4);
+        grid.add(checkValues, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -486,21 +487,15 @@ public class Controller {
         Optional<SignConfigModel> result = dialog.showAndWait();
 
         result.ifPresent(signConfig -> {
-            if (!new File(signConfig.getStorePath()).exists()) {
-                MiscUtils.showAlert(
-                        Alert.AlertType.ERROR,
-                        "Sign Configuration",
-                        "Keystore does not exist",
-                        "This Keystore does not exist, please create a Keystore or correct the Path"
-                );
-                return;
-            }
+            signConfig.setActive(true);
             if (edit) {
                 keyTable.getItems().remove(oldConfig);
                 removeFromCollection(SIGN_CONFIGS, oldConfig);
+                signConfig.setActive(oldConfig.active());
             }
             addToCollection(SIGN_CONFIGS, signConfig);
             keyTable.getItems().add(signConfig);
+            keyTable.getSelectionModel().select(signConfig);
         });
     }
 
@@ -709,6 +704,11 @@ public class Controller {
                 buttonBar.getButtons().get(2),
                 buttonBar.getButtons().get(3)
         );
+        tableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            Button button = (Button) buttonBar.getButtons().get(3);
+            button.setDisable(newValue == null);
+            button.setText(newValue == null || !newValue.isActive() ? "Activate" : "Disable");
+        });
 
         buttonBar.getButtons().get(0).addEventHandler(ActionEvent.ANY, event ->
                 new Thread(() -> {
