@@ -65,6 +65,7 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_IN
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SHOW_PASSWORDS;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_CONFIGS;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SIGN_PACK;
 
@@ -183,13 +184,13 @@ public class Controller {
                 new SimpleStringProperty(value.getValue().getStorePath())
         );
         storePasswordCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().getStorePassword())
+                new SimpleStringProperty(value.getValue().getDisplayStorePassword())
         );
         keyAliasCol.setCellValueFactory((value) ->
                 new SimpleStringProperty(value.getValue().getKeyAlias())
         );
         keyPasswordCol.setCellValueFactory((value) ->
-                new SimpleStringProperty(value.getValue().getKeyPassword())
+                new SimpleStringProperty(value.getValue().getDisplayKeyPassword())
         );
 
         keyTable.setRowFactory(tv -> RowCellFactory.getAStateTableRow());
@@ -772,6 +773,10 @@ public class Controller {
         CheckBox darkThemeCheck = new CheckBox("Dark Theme");
         darkThemeCheck.setSelected(getPref(DARK_THEME));
         darkThemeCheck.selectedProperty().addListener((observable, oldValue, newValue) -> setTheme(newValue));
+
+        CheckBox showPasswords = new CheckBox("Show Passwords");
+        showPasswords.setSelected(getPref(SHOW_PASSWORDS));
+        showPasswords.selectedProperty().addListener((observable, oldValue, newValue) -> keyTable.refresh());
 
         VBox vBox = new VBox(darkThemeCheck);
         vBox.setPadding(new Insets(10d));

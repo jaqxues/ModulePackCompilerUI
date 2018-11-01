@@ -17,6 +17,7 @@ public enum PreferencesDef {
     DARK_THEME("DarkTheme", Boolean.class, false),
     PROJECT_ROOT("ProjectRoot", String.class, null),
     MODULE_PACKAGE("ModulePackage", String.class, null),
+    SHOW_PASSWORDS("ShowPasswords", Boolean.class, false),
     FILE_SOURCES("FileSources", new TypeToken<LinkedHashMap<String, Boolean>>() {}.getType(), null),
     ADB_PUSH_TOGGLE("AdbPushToggle", Boolean.class, false),
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),

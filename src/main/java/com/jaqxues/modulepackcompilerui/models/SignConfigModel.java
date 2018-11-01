@@ -3,12 +3,17 @@ package com.jaqxues.modulepackcompilerui.models;
 import com.google.gson.annotations.SerializedName;
 import com.jaqxues.modulepackcompilerui.utils.RowCellFactory;
 
+import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SHOW_PASSWORDS;
+
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
  * Date: 10.10.2018 - Time 18:24.
  */
 
 public class SignConfigModel implements RowCellFactory.ActiveStateManager {
+
+    public static final String PLACEHOLDER = "*********";
 
     @SerializedName("StorePath")
     private String storePath;
@@ -41,12 +46,20 @@ public class SignConfigModel implements RowCellFactory.ActiveStateManager {
         return storePassword;
     }
 
+    public String getDisplayStorePassword() {
+        return getPref(SHOW_PASSWORDS) ? storePassword : PLACEHOLDER;
+    }
+
     public String getKeyAlias() {
         return keyAlias;
     }
 
     public String getKeyPassword() {
         return keyPassword;
+    }
+
+    public String getDisplayKeyPassword() {
+        return getPref(SHOW_PASSWORDS) ? keyPassword : PLACEHOLDER;
     }
 
     public void setActive(boolean isActive) {
@@ -67,9 +80,9 @@ public class SignConfigModel implements RowCellFactory.ActiveStateManager {
     public String toString() {
         return "SignConfigModel{" +
                 "storePath='" + storePath + '\'' +
-                ", storePassword='" + storePassword + '\'' +
+                ", storePassword='" + PLACEHOLDER + '\'' +
                 ", keyAlias='" + keyAlias + '\'' +
-                ", keyPassword='" + keyPassword + '\'' +
+                ", keyPassword='" + PLACEHOLDER + '\'' +
                 ", isActive=" + isActive +
                 '}';
     }

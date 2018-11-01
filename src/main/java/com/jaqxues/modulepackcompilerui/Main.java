@@ -46,6 +46,8 @@ public class Main extends Application {
                 new Image("images/module_yellow_100.png"),
                 new Image("images/module_yellow_500.png")
         );
+        primaryStage.setMinWidth(1200d);
+        primaryStage.setMinHeight(900d);
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
 
