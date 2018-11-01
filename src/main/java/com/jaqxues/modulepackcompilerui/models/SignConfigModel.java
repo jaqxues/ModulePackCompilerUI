@@ -73,7 +73,10 @@ public class SignConfigModel implements RowCellFactory.ActiveStateManager {
 
     @Override
     public String getString() {
-        return toString();
+        return "Keystore Path: " + storePath +
+                "\nKeystore Password: " + getDisplayStorePassword() +
+                "\nKey Alias: " + keyAlias +
+                "\nKey Password: " + getDisplayKeyPassword();
     }
 
     @Override

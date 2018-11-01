@@ -776,9 +776,12 @@ public class Controller {
 
         CheckBox showPasswords = new CheckBox("Show Passwords");
         showPasswords.setSelected(getPref(SHOW_PASSWORDS));
-        showPasswords.selectedProperty().addListener((observable, oldValue, newValue) -> keyTable.refresh());
+        showPasswords.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            putPref(SHOW_PASSWORDS, newValue);
+            keyTable.refresh();
+        });
 
-        VBox vBox = new VBox(darkThemeCheck);
+        VBox vBox = new VBox(darkThemeCheck, showPasswords);
         vBox.setPadding(new Insets(10d));
         vBox.setSpacing(10d);
 

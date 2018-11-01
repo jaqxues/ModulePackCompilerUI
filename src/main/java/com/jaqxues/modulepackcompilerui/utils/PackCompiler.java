@@ -288,6 +288,14 @@ public class PackCompiler {
         PackCompiler.compiling.set(compiling);
     }
 
+    /**
+     * A simple command to bundle the commands for compiling a ModulePack. We need the JDK Path and
+     * the Android SDK Build-Tools Path as we cannot just copy one "jar.exe" file into our resources:
+     * It needs more context. It makes sense to just ask for those two paths
+     *
+     * @param manifest The manifest file for the new Jar
+     * @return An Array containing the Commands
+     */
     private String[] getCommands(File manifest) {
         return new String[]{
                 getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + MiscUtils.getMPFolder(),
@@ -401,7 +409,7 @@ public class PackCompiler {
                 sourcesString.toString(),
                 jadbDevString.toString(),
                 jarTarget.getParentFile().getAbsolutePath(),
-                signConfig == null ? "None" : signConfig.getString(),
+                signConfig == null ? "None" : ("\n" + signConfig.getString()).replaceAll("\n", "\n\t\t"),
                 attributesString.toString()
         );
     }
