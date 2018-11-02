@@ -311,8 +311,8 @@ public class Controller {
             String valueTxt = value.getText().trim();
             if (!nameTxt.isEmpty() && !valueTxt.isEmpty()) {
 
-                if (!nameTxt.matches("^[a-zA-Z0-9]+.+$") ||
-                        !valueTxt.matches("^[a-zA-Z0-9]+.+$")) {
+                if (!nameTxt.matches("^[a-zA-Z0-9]+$") ||
+                        !valueTxt.matches("^[a-zA-Z0-9.]+$")) {
                     MiscUtils.showAlert(
                             Alert.AlertType.INFORMATION,
                             "Attributes Manager",
@@ -354,6 +354,7 @@ public class Controller {
             }
             addToCollection(ATTRIBUTES, string1);
             attrTable.getItems().add(string1);
+            attrTable.getSelectionModel().select(string1);
         });
     }
 
