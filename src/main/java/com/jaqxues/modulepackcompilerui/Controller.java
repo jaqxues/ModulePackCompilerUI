@@ -1035,7 +1035,7 @@ public class Controller {
                 String snaptoolsJar = PackCompiler.getSTFileNameFromTemplate(attrTable.getItems());
                 PackCompiler packCompiler = new PackCompiler.Builder()
                         .setAttributes(attrTable.getItems())
-                        .setJarTarget(new File(snaptoolsJar.isEmpty() ? "Files/Packs/Pack" : "Files/Packs/" + snaptoolsJar))
+                        .setJarTarget(new File(snaptoolsJar.isEmpty() ? "Packs/Pack" : "Packs/" + snaptoolsJar))
                         .setSignConfig(getActiveSigning())
                         .setVirtualAdbDevices(AdbUtils.getActiveDevices())
                         .setSources(sources)
