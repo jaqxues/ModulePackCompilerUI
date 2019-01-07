@@ -349,11 +349,12 @@ public class Controller {
 
         dialog.showAndWait().ifPresent(string1 -> {
             if (edit) {
-                attrTable.getItems().remove(string);
                 removeFromCollection(ATTRIBUTES, string);
-            }
+                attrTable.getItems().set(attrTable.getItems().indexOf(string), string1);
+            } else
+                attrTable.getItems().add(string1);
+
             addToCollection(ATTRIBUTES, string1);
-            attrTable.getItems().add(string1);
             attrTable.getSelectionModel().select(string1);
         });
     }
@@ -843,7 +844,7 @@ public class Controller {
     // EVENT METHODS
     // ============================================================================================
 
-    public void setModulePackage(ActionEvent event) {
+    public void setModulePackage() {
         TextInputDialog inputDialog = new TextInputDialog();
         inputDialog.setTitle("General Settings");
         inputDialog.setHeaderText("Set Module Package");
@@ -856,7 +857,7 @@ public class Controller {
         );
     }
 
-    public void setProjectRoot(ActionEvent event) {
+    public void setProjectRoot() {
         getDirSelectorDialog(
                 "General Settings",
                 "Set Project Root",
@@ -867,7 +868,7 @@ public class Controller {
         );
     }
 
-    public void setSources(ActionEvent event) {
+    public void setSources() {
         String projectRoot = getPref(PROJECT_ROOT);
         if (projectRoot == null || !new File(projectRoot).exists()) {
             MiscUtils.showAlert(
@@ -976,39 +977,39 @@ public class Controller {
         dialog.showAndWait();
     }
 
-    public void addAttribute(ActionEvent event) {
+    public void addAttribute() {
         attrInputDialog(null);
     }
 
-    public void editAttribute(ActionEvent event) {
+    public void editAttribute() {
         attrInputDialog(attrTable.getSelectionModel().getSelectedItem());
     }
 
-    public void removeAttribute(ActionEvent event) {
+    public void removeAttribute() {
         String attribute = attrTable.getSelectionModel().getSelectedItem();
         attrTable.getItems().remove(attribute);
         removeFromCollection(ATTRIBUTES, attribute);
     }
 
-    public void toggleSignPack(ActionEvent event) {
+    public void toggleSignPack() {
         keyContainer.setDisable(
                 !togglePref(SIGN_PACK)
         );
     }
 
-    public void addKeyConfig(ActionEvent event) {
+    public void addKeyConfig() {
         keyInputDialog(null);
     }
 
-    public void editKeyConfig(ActionEvent event) {
+    public void editKeyConfig() {
         keyInputDialog(keyTable.getSelectionModel().getSelectedItem());
     }
 
-    public void removeKeyConfig(ActionEvent event) {
+    public void removeKeyConfig() {
         keyTable.getItems().remove(keyTable.getSelectionModel().getSelectedItem());
     }
 
-    public void compileModPack(ActionEvent event) {
+    public void compileModPack() {
         String preferenceCheck = checkPreferences();
         if (preferenceCheck != null) {
             MiscUtils.showAlert(
@@ -1074,7 +1075,7 @@ public class Controller {
         }).start();
     }
 
-    public void setSDKBuildTools(ActionEvent event) {
+    public void setSDKBuildTools() {
         String path = getPref(SDK_BUILD_TOOLS);
         if (path == null || !new File(path).exists()) {
             path = MiscUtils.getLocalAppDataDir() + "\\Android\\Sdk\\build-tools";
@@ -1091,7 +1092,7 @@ public class Controller {
         ).showAndWait().ifPresent(s -> putPref(SDK_BUILD_TOOLS, s));
     }
 
-    public void setJDKInstallation(ActionEvent event) {
+    public void setJDKInstallation() {
         String path = getPref(JDK_INSTALLATION_PATH);
         if (path == null || !new File(path).exists()) {
             path = MiscUtils.getProgramFilesDir() + "\\Java";
@@ -1108,15 +1109,15 @@ public class Controller {
         ).showAndWait().ifPresent(s -> putPref(JDK_INSTALLATION_PATH, s));
     }
 
-    public void saveSavedConfig(ActionEvent event) {
+    public void saveSavedConfig() {
         savedConfigInputDialog(null);
     }
 
-    public void editSavedConfig(ActionEvent event) {
+    public void editSavedConfig() {
         savedConfigInputDialog(savedConfigTable.getSelectionModel().getSelectedItem());
     }
 
-    public void restoreSavedConfig(ActionEvent event) {
+    public void restoreSavedConfig() {
         SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
 
         if (model.getProjectRoot() == null || !new File(model.getProjectRoot()).exists()) {
@@ -1153,7 +1154,7 @@ public class Controller {
         putPref(FILE_SOURCES, model.getModuleSources());
     }
 
-    public void removeSavedConfig(ActionEvent event) {
+    public void removeSavedConfig() {
         SavedConfigModel model = savedConfigTable.getSelectionModel().getSelectedItem();
         savedConfigTable.getItems().remove(model);
         SavedConfigModel.removeConfig(model);
@@ -1171,7 +1172,7 @@ public class Controller {
         }
     }
 
-    public void resetCurrentPrefs(ActionEvent event) {
+    public void resetCurrentPrefs() {
         attrTable.getItems().clear();
         clearCollection(ATTRIBUTES);
         clearMap(FILE_SOURCES);
@@ -1179,17 +1180,17 @@ public class Controller {
         putPref(MODULE_PACKAGE, "");
     }
 
-    public void adbPushSettings(ActionEvent event) {
+    public void adbPushSettings() {
         jadbDialog();
     }
 
-    public void adbPushToggle(ActionEvent event) {
+    public void adbPushToggle() {
         adbPushSettings.setDisable(
                 !togglePref(ADB_PUSH_TOGGLE)
         );
     }
 
-    public void activateSignConfig(ActionEvent event) {
+    public void activateSignConfig() {
         boolean active = !keyTable.getSelectionModel().getSelectedItem().active();
         keyTable.getItems().forEach(signConfig -> signConfig.setActive(false));
         keyTable.getSelectionModel().getSelectedItem().setActive(active);
@@ -1198,7 +1199,7 @@ public class Controller {
         keyTable.refresh();
     }
 
-    public void otherPrefs(ActionEvent event) {
+    public void otherPrefs() {
         otherPrefsDialog();
     }
 
