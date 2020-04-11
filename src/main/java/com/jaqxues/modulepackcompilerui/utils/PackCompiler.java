@@ -4,34 +4,23 @@ import com.jaqxues.modulepackcompilerui.exceptions.CMDException;
 import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
 import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import javafx.scene.control.Alert;
 import se.vidstige.jadb.JadbDevice;
 import se.vidstige.jadb.RemoteFile;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.*;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -39,16 +28,16 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BU
  */
 
 public class PackCompiler {
-    private static AtomicBoolean compiling = new AtomicBoolean();
-    private File[] sources;
-    private String[] attributes;
-    private VirtualAdbDeviceModel[] jadbDevices;
-    private File jarTarget;
+    private static final AtomicBoolean compiling = new AtomicBoolean();
+    private final File[] sources;
+    private final String[] attributes;
+    private final VirtualAdbDeviceModel[] jadbDevices;
+    private final File jarTarget;
     private boolean signed = false;
-    private SignConfigModel signConfig;
-    private File currentPath = new File("Files/Process");
-    private File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
-    private File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
+    private final SignConfigModel signConfig;
+    private final File currentPath = new File("Files/Process");
+    private final File compiledPath = new File(currentPath.getAbsolutePath(), "Compiled");
+    private final File preCompiledSToolsJar = new File(currentPath.getAbsolutePath(), "PreCompiledSTools.jar");
 
     private PackCompiler(File[] sources, String[] attributes, VirtualAdbDeviceModel[] jadbDevices, File jarTarget, SignConfigModel signConfig) {
         this.sources = sources;
@@ -88,7 +77,6 @@ public class PackCompiler {
         for (File source : sources) {
             if (!source.exists())
                 throw new NotCompiledException("Class Files not found, please check if you compiled the Pack. If you already compiled it, check the Module Package Name and the Project Root\n\nSource Folder: " + source.getAbsolutePath());
-
         }
 
         File targetFile = new File(dest, MiscUtils.getMPFolder());
@@ -117,7 +105,7 @@ public class PackCompiler {
     /**
      * Handles pushing the ModulePack via ADB to the Adb Device (using Jadb)
      *
-     * @param file The file that should be pushed
+     * @param file     The file that should be pushed
      * @param vAdbDevs The devices that the file should be pushed to
      * @return A bundled List of all Exceptions that occurred as the program should still try to copy the Files to the other devices.
      */
@@ -288,6 +276,17 @@ public class PackCompiler {
         PackCompiler.compiling.set(compiling);
     }
 
+    private static Set<String> getClassNames(Set<String> names, File path) {
+        for (File file : Objects.requireNonNull(path.listFiles())) {
+            if (file.isFile() && path.getAbsolutePath().contains(MiscUtils.getMPFolder().replaceAll("\\\\", File.separator))) {
+                names.add(file.getAbsolutePath());
+            } else if (file.isDirectory()) {
+                getClassNames(names, file);
+            }
+        }
+        return names;
+    }
+
     /**
      * A simple command to bundle the commands for compiling a ModulePack. We need the JDK Path and
      * the Android SDK Build-Tools Path as we cannot just copy one "jar.exe" file into our resources:
@@ -297,11 +296,18 @@ public class PackCompiler {
      * @return An Array containing the Commands
      */
     private String[] getCommands(File manifest) {
-        return new String[]{
-                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "\\" + MiscUtils.getMPFolder(),
-                getPref(SDK_BUILD_TOOLS) + "\\dx.bat --dex --output=" + jarTarget.getAbsolutePath() + "_unsigned.jar " + compiledPath.getAbsolutePath(),
-                getPref(JDK_INSTALLATION_PATH) + "\\bin\\jar.exe umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
+        String[] commands = new String[]{
+                getPref(JDK_INSTALLATION_PATH) + "/bin/jar uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "/" + MiscUtils.getMPFolder(),
+                getPref(SDK_BUILD_TOOLS) + "/d8 --output " + jarTarget.getAbsolutePath() + "_unsigned.jar " + String.join(" ", getClassNames(new HashSet<>(), compiledPath)),
+                getPref(JDK_INSTALLATION_PATH) + "/bin/jar umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
         };
+        for (int i = 0; i < commands.length; i++) {
+            // Windows Stuff
+            if (!File.separator.equals("/")) {
+                commands[i] = commands[i].replace("/d8 --output", "/d8.bat --output").replace("/", File.separator);
+            }
+        }
+        return commands;
     }
 
     private File createManifestFile() throws IOException {
@@ -382,7 +388,7 @@ public class PackCompiler {
             if (jarTarget == null) {
                 throw new IllegalArgumentException("No Jar Target Provided");
             }
-            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), (vAdbDevices == null ) ? new VirtualAdbDeviceModel[0] : vAdbDevices.toArray(new VirtualAdbDeviceModel[0]), jarTarget, signConfig);
+            return new PackCompiler(sources.toArray(new File[0]), attributes.toArray(new String[0]), (vAdbDevices == null) ? new VirtualAdbDeviceModel[0] : vAdbDevices.toArray(new VirtualAdbDeviceModel[0]), jarTarget, signConfig);
         }
     }
 
