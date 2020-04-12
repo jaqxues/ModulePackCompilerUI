@@ -102,10 +102,8 @@ public class SavedConfigModel {
 
     private static SavedConfigModel getDefaultSignConfig() {
         Map<String, Boolean> sources = new HashMap<>();
-        sources.put("/app/build/intermediates/transforms/desugar/pack/release/0/", true);
         sources.put("/app/build/tmp/kotlin-classes/packRelease/", true);
-        sources.put("/app/build/intermediates/transforms/desugar/pack/debug/0/", false);
-        sources.put("/app/build/tmp/kotlin-classes/packDebug/", false);
+        sources.put("/app/build/intermediates/javac/packRelease/classes/", true);
         return new SavedConfigModel()
                         .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
                         .setSavedConfigDate(System.currentTimeMillis())
