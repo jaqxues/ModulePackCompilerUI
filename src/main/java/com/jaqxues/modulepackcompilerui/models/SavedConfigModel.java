@@ -79,7 +79,8 @@ public class SavedConfigModel {
         JsonArray object = getConfigJson();
         if (object.size() == 0) {
             SavedConfigModel[] savedConfigModels = new SavedConfigModel[]{
-                    getDefaultSignConfig()
+                    getDefaultSnapToolsSignConfig(),
+                    getDefaultAkrolybSignConfig()
             };
             saveJson(GsonSingleton.getSingleton().toJsonTree(savedConfigModels));
             return savedConfigModels;
@@ -100,25 +101,45 @@ public class SavedConfigModel {
         }
     }
 
-    private static SavedConfigModel getDefaultSignConfig() {
+    private static SavedConfigModel getDefaultSnapToolsSignConfig() {
         Map<String, Boolean> sources = new HashMap<>();
         sources.put("/app/build/tmp/kotlin-classes/packRelease/", true);
         sources.put("/app/build/intermediates/javac/packRelease/classes/", true);
         return new SavedConfigModel()
-                        .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
-                        .setSavedConfigDate(System.currentTimeMillis())
-                        .setSavedConfigName("Default SnapTools Configuration")
-                        .setAttributes(Arrays.asList(
-                                "Development=TRUE",
-                                "PackVersion=1.0.0.0",
-                                "Flavour=prod",
-                                "Type=Premium",
-                                "SCVersion=10.41.6.0"
-                        ))
-                        .setSavedConfigDate(System.currentTimeMillis())
-                        .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
-                        .setModuleSources(sources);
+                .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
+                .setSavedConfigDate(System.currentTimeMillis())
+                .setSavedConfigName("Default SnapTools Configuration")
+                .setAttributes(Arrays.asList(
+                        "Development=TRUE",
+                        "PackVersion=1.0.0.0",
+                        "Flavour=prod",
+                        "Type=Premium",
+                        "SCVersion=10.41.6.0"
+                ))
+                .setSavedConfigDate(System.currentTimeMillis())
+                .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
+                .setModuleSources(sources);
     }
+
+    private static SavedConfigModel getDefaultAkrolybSignConfig() {
+        Map<String, Boolean> sources = new HashMap<>();
+        sources.put("/app/build/tmp/kotlin-classes/packRelease/", true);
+        return new SavedConfigModel()
+                .setModulePackage("com.jaqxues.akrolyb.sample.pack")
+                .setSavedConfigDate(System.currentTimeMillis())
+                .setSavedConfigName("Default Akrolyb Configuration")
+                .setAttributes(Arrays.asList(
+                        "Development=TRUE",
+                        "PackVersionCode=1",
+                        "PackVersion=1.0.0",
+                        "MinApkVersionCode=1",
+                        "PackImpl=com.jaqxues.akrolyb.sample.pack.PackImpl"
+                ))
+                .setSavedConfigDate(System.currentTimeMillis())
+                .setSavedConfigNotices("Default Configuration for an Akrolyb Pack")
+                .setModuleSources(sources);
+    }
+
 
     private static JsonArray getConfigJson() {
         JsonParser jsonParser = new JsonParser();

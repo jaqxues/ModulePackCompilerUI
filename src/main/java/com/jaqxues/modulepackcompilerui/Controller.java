@@ -1033,10 +1033,10 @@ public class Controller {
 
         new Thread(() -> {
             try {
-                String snaptoolsJar = PackCompiler.getSTFileNameFromTemplate(attrTable.getItems());
+                String packJarTarget = "CompiledModPack.jar"; // PackCompiler.getSTFileNameFromTemplate(attrTable.getItems());
                 PackCompiler packCompiler = new PackCompiler.Builder()
                         .setAttributes(attrTable.getItems())
-                        .setJarTarget(new File(snaptoolsJar.isEmpty() ? "Packs/Pack" : "Packs/" + snaptoolsJar))
+                        .setJarTarget(new File(packJarTarget.isEmpty() ? "Packs/Pack" : "Packs/" + packJarTarget))
                         .setSignConfig(getActiveSigning())
                         .setVirtualAdbDevices(AdbUtils.getActiveDevices())
                         .setSources(sources)
