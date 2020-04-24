@@ -12,9 +12,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -26,7 +24,7 @@ public class PreferenceManager {
     private static final Object MAP_LOCK = new Object();
     private static final Object WRITE_LOCK = new Object();
     private static File preferencesFile;
-    private static Map<String, Object> preferences = new HashMap<>();
+    private static final Map<String, Object> preferences = new HashMap<>();
 
     public static void init() throws IOException {
         synchronized (MAP_LOCK) {
@@ -48,13 +46,16 @@ public class PreferenceManager {
                 PreferencesDef preferencesDef = PreferencesDef.fromKey(entry.getKey());
                 if (preferencesDef == null)
                     continue;
+                Object obj = GsonSingleton.getSingleton().fromJson(
+                        entry.getValue(),
+                        preferencesDef.getType() != null ? preferencesDef.getType() : preferencesDef.getTypeToken()
+                );
+                if (obj instanceof AbstractList) {
+                    obj = new ArrayList<>((Collection) obj);
+                }
                 preferences.put(
                         entry.getKey(),
-                        GsonSingleton.getSingleton().fromJson(
-                                entry.getValue(),
-                                preferencesDef.getType() != null ? preferencesDef.getType() : preferencesDef.getTypeToken()
-                        )
-                );
+                        obj);
             }
 
             for (PreferencesDef pref : PreferencesDef.values()) {
@@ -139,7 +140,7 @@ public class PreferenceManager {
     public static <T> T removeFromCollection(PreferencesDef pref, T value) {
         synchronized (MAP_LOCK) {
             //noinspection unchecked
-            ((Collection<T>) getPref(pref)).remove(value);
+            ((ArrayList<T>) getPref(pref)).remove(value);
         }
         saveMap();
         return value;
@@ -147,7 +148,7 @@ public class PreferenceManager {
 
     public static void clearCollection(PreferencesDef pref) {
         synchronized (MAP_LOCK) {
-            ((Collection<?>) getPref(pref)).clear();
+            ((ArrayList<?>) getPref(pref)).clear();
         }
         saveMap();
     }

@@ -12,11 +12,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -109,13 +105,13 @@ public class SavedConfigModel {
                 .setModulePackage("com.ljmu.andre.snaptools.ModulePack")
                 .setSavedConfigDate(System.currentTimeMillis())
                 .setSavedConfigName("Default SnapTools Configuration")
-                .setAttributes(Arrays.asList(
+                .setAttributes(new ArrayList<>(Arrays.asList(
                         "Development=TRUE",
                         "PackVersion=1.0.0.0",
                         "Flavour=prod",
                         "Type=Premium",
                         "SCVersion=10.41.6.0"
-                ))
+                )))
                 .setSavedConfigDate(System.currentTimeMillis())
                 .setSavedConfigNotices("Default Configuration for a SnapTools ModulePack")
                 .setModuleSources(sources);
@@ -128,13 +124,13 @@ public class SavedConfigModel {
                 .setModulePackage("com.jaqxues.akrolyb.sample.pack")
                 .setSavedConfigDate(System.currentTimeMillis())
                 .setSavedConfigName("Default Akrolyb Configuration")
-                .setAttributes(Arrays.asList(
+                .setAttributes(new ArrayList<>(Arrays.asList(
                         "Development=TRUE",
                         "PackVersionCode=1",
                         "PackVersion=1.0.0",
                         "MinApkVersionCode=1",
                         "PackImpl=com.jaqxues.akrolyb.sample.pack.PackImpl"
-                ))
+                )))
                 .setSavedConfigDate(System.currentTimeMillis())
                 .setSavedConfigNotices("Default Configuration for an Akrolyb Pack")
                 .setModuleSources(sources);

@@ -297,8 +297,12 @@ public class PackCompiler {
      */
     private String[] getCommands(File manifest) {
         boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        String jarExe = "\"" + getPref(JDK_INSTALLATION_PATH) + "/bin/jar" + (isWindows ? ".exe" : "") + "\"";
-        String d8Exec = "\"" + getPref(SDK_BUILD_TOOLS) + "/d8" + (isWindows ? ".bat" : "") + "\"";
+        String jarExe = getPref(JDK_INSTALLATION_PATH) + "/bin/jar" + (isWindows ? ".exe" : "");
+        String d8Exec = getPref(SDK_BUILD_TOOLS) + "/d8" + (isWindows ? ".bat" : "");
+        if (isWindows) {
+            jarExe = "\"" + jarExe + "\"";
+            d8Exec = "\"" + d8Exec + "\"";
+        }
         String[] commands = new String[]{
                 jarExe + " uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "/" + MiscUtils.getMPFolder(),
                 d8Exec + " --output " + jarTarget.getAbsolutePath() + "_unsigned.jar " + String.join(" ", getClassNames(new HashSet<>(), compiledPath)),
