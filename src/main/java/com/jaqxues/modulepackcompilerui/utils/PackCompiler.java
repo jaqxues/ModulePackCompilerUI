@@ -296,15 +296,18 @@ public class PackCompiler {
      * @return An Array containing the Commands
      */
     private String[] getCommands(File manifest) {
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+        String jarExe = "\"" + getPref(JDK_INSTALLATION_PATH) + "/bin/jar" + (isWindows ? ".exe" : "") + "\"";
+        String d8Exec = "\"" + getPref(SDK_BUILD_TOOLS) + "/d8" + (isWindows ? ".bat" : "") + "\"";
         String[] commands = new String[]{
-                getPref(JDK_INSTALLATION_PATH) + "/bin/jar uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "/" + MiscUtils.getMPFolder(),
-                getPref(SDK_BUILD_TOOLS) + "/d8 --output " + jarTarget.getAbsolutePath() + "_unsigned.jar " + String.join(" ", getClassNames(new HashSet<>(), compiledPath)),
-                getPref(JDK_INSTALLATION_PATH) + "/bin/jar umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
+                jarExe + " uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "/" + MiscUtils.getMPFolder(),
+                d8Exec + " --output " + jarTarget.getAbsolutePath() + "_unsigned.jar " + String.join(" ", getClassNames(new HashSet<>(), compiledPath)),
+                jarExe + " umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
         };
         for (int i = 0; i < commands.length; i++) {
-            // Windows Stuff
+            // Windows Stuff - Pretty Printing
             if (!File.separator.equals("/")) {
-                commands[i] = commands[i].replace("/d8 --output", "/d8.bat --output").replace("/", File.separator);
+                commands[i] = commands[i].replace("/", File.separator);
             }
         }
         return commands;
