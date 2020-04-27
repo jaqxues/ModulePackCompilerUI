@@ -1078,35 +1078,68 @@ public class Controller {
     public void setSDKBuildTools() {
         String path = getPref(SDK_BUILD_TOOLS);
         if (path == null || !new File(path).exists()) {
-            path = MiscUtils.getLocalAppDataDir() + "\\Android\\Sdk\\build-tools";
-            if (!new File(path).exists())
-                path = MiscUtils.getLocalAppDataDir();
+            File file = new File(MiscUtils.getLocalAppDataDir(), "Android/Sdk/build-tools");
+            path = file.exists()
+                    ? file.getAbsolutePath()
+                    : MiscUtils.getLocalAppDataDir();
         }
 
         getDirSelectorDialog(
                 "Path Configurations",
                 "SDK Build Tools Installation Path",
-                "Example Folder: C:\\Users\\ExampleUser\\AppData\\Local\\Android\\Sdk\\build-tools\\26.0.2\n\n The Build Tools Version does not matter. Please make sure that the Folder contains the \"dx.bat\" File which is an essential part of compiling Module Packs.\n\nIf the Folder does not contain a such file, please check in the SDK Manager and download the BuildTools.",
+                "Example Folder: C:\\Users\\ExampleUser\\AppData\\Local\\Android\\Sdk\\build-tools\\26.0.2\n\n The Build Tools Version does not matter. Please make sure that the Folder contains the \"d8(.bat)\" File which is an essential part of compiling Module Packs.\n\nIf the Folder does not contain a such file, please check in the SDK Manager and download the BuildTools.",
                 "Build Tools Path",
                 path
-        ).showAndWait().ifPresent(s -> putPref(SDK_BUILD_TOOLS, s));
+        ).showAndWait().ifPresent(s -> {
+            if (!new File(s, "d8" + (MiscUtils.isWindows() ? ".bat" : "")).exists()) {
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Invalid Android SDK Folder",
+                        "d8 Executable does not exist",
+                        "The ModulePackCompiler needs the d8 executable to create a pack. Please select the folder containing this File."
+                );
+            }
+            putPref(SDK_BUILD_TOOLS, s);
+        });
     }
 
     public void setJDKInstallation() {
         String path = getPref(JDK_INSTALLATION_PATH);
         if (path == null || !new File(path).exists()) {
-            path = MiscUtils.getProgramFilesDir() + "\\Java";
-            if (!new File(path).exists())
-                path = MiscUtils.getProgramFilesDir();
+            File file = new File(MiscUtils.getProgramFilesDir(), "Java");
+            path = file.exists()
+                    ? file.getAbsolutePath()
+                    : MiscUtils.getProgramFilesDir();
         }
 
         getDirSelectorDialog(
                 "Path Configurations",
                 "JDK Installation Path",
-                "Example Folder: C:\\Program Files\\Java\\jdk1.8.0_172\n\nPlease use JDK 1.8.0 for Android Development. This Path will be used to find the jarsigner.exe in /bin of this Folder.",
+                "Example Folder: C:\\Program Files\\Java\\jdk1.8.0_172\n\nPlease use JDK 1.8.0 for Android Development. This Path will be used to find the \"jar(.exe)\" and \"jarsigner(.exe)\" in /bin of this Folder.",
                 "JDK Installation Path",
                 path
-        ).showAndWait().ifPresent(s -> putPref(JDK_INSTALLATION_PATH, s));
+        ).showAndWait().ifPresent(s -> {
+            File jdkDir = new File(s.replace("bin", ""));
+            if (!new File(jdkDir, "bin/jar" + (MiscUtils.isWindows() ? ".exe" : "")).exists()) {
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "JDK Folder invalid",
+                        "Jar Executable does not exist",
+                        "The ModulePackCompiler needs the Jar Executable to pack the Class Files. Please the folder containing this file"
+                );
+                return;
+            }
+            if (!new File(jdkDir, "bin/jarsigner" + (MiscUtils.isWindows() ? ".exe" : "")).exists()) {
+                MiscUtils.showAlert(
+                        Alert.AlertType.ERROR,
+                        "JDK Folder invalid",
+                        "Jarsigner Executable does not exist",
+                        "The ModulePackCompiler needs the Jarsigner Executable to sign the Pack. Please select the folder containing this file"
+                );
+                return;
+            }
+            putPref(JDK_INSTALLATION_PATH, jdkDir.getAbsolutePath());
+        });
     }
 
     public void saveSavedConfig() {

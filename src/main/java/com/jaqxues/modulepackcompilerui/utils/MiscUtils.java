@@ -127,4 +127,18 @@ public class MiscUtils {
         }
         return key != null ? null : "An unknown exception occurred while trying to instantiate a Key with given Values";
     }
+
+    public static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    public static String executableCMD(String path, String child, String winExtension) {
+        String file = new File(path, child).getAbsolutePath();
+        if (isWindows()) {
+            file = "\"" + file + "." + winExtension + "\"";
+        } else {
+            file.replaceAll(" ", "\\ ");
+        }
+        return file;
+    }
 }

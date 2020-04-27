@@ -190,8 +190,9 @@ public class PackCompiler {
         String checkedKey = MiscUtils.checkSignKey(signConfig);
         if (checkedKey != null)
             throw new NotCompiledException(checkedKey);
-        String command = String.format("\"%s\\bin\\jarsigner.exe\" -tsa http://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
-                getPref(JDK_INSTALLATION_PATH),
+        String jarsignerExe = MiscUtils.executableCMD(getPref(JDK_INSTALLATION_PATH) ,"/bin/jarsigner", "exe");
+        String command = String.format("%s -tsa http://timestamp.digicert.com -keystore %s -signedjar %s.jar %s_unsigned.jar %s",
+                jarsignerExe,
                 signConfig.getStorePath(),
                 jarTarget.getAbsolutePath(),
                 jarTarget.getAbsolutePath(),
@@ -296,17 +297,12 @@ public class PackCompiler {
      * @return An Array containing the Commands
      */
     private String[] getCommands(File manifest) {
-        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        String jarExe = getPref(JDK_INSTALLATION_PATH) + "/bin/jar" + (isWindows ? ".exe" : "");
-        String d8Exec = getPref(SDK_BUILD_TOOLS) + "/d8" + (isWindows ? ".bat" : "");
-        if (isWindows) {
-            jarExe = "\"" + jarExe + "\"";
-            d8Exec = "\"" + d8Exec + "\"";
-        }
+        String jarExe = MiscUtils.executableCMD(getPref(JDK_INSTALLATION_PATH), "/bin/jar", "exe");
+        String d8Exec = MiscUtils.executableCMD(getPref(SDK_BUILD_TOOLS), "/d8", "bat");
         String[] commands = new String[]{
-                jarExe + " uf " + preCompiledSToolsJar.getAbsolutePath() + " " + compiledPath.getAbsolutePath() + "/" + MiscUtils.getMPFolder(),
-                d8Exec + " --output " + jarTarget.getAbsolutePath() + "_unsigned.jar " + String.join(" ", getClassNames(new HashSet<>(), compiledPath)),
-                jarExe + " umf " + manifest.getAbsolutePath() + " " + jarTarget.getAbsolutePath() + "_unsigned.jar"
+                String.format("%s uf %s %s/%s", jarExe, preCompiledSToolsJar.getAbsolutePath(), compiledPath.getAbsolutePath(), MiscUtils.getMPFolder()),
+                String.format("%s --output %s_unsigned.jar %s", d8Exec, jarTarget.getAbsolutePath(), String.join(" ", getClassNames(new HashSet<>(), compiledPath))),
+                String.format("%s umf %s %s_unsigned.jar", jarExe, manifest.getAbsolutePath(), jarTarget.getAbsolutePath())
         };
         for (int i = 0; i < commands.length; i++) {
             // Windows Stuff - Pretty Printing
