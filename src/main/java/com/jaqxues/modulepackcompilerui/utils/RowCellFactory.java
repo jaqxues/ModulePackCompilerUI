@@ -64,8 +64,12 @@ public class RowCellFactory {
             @Override
             protected void updateItem(Map.Entry<String, Boolean> item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty)
+                if (empty) {
+                    // Reset style if item has been removed
+                    setStyle(null);
+                    setText("");
                     return;
+                }
                 setText(item.getKey());
                 switch (sourceState(item)) {
                     case 3:

@@ -42,6 +42,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.cell.ChoiceBoxListCell;
+import javafx.scene.control.cell.ChoiceBoxTableCell;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -961,7 +963,7 @@ public class Controller {
         buttonBar.getButtons().get(2).addEventHandler(ActionEvent.ANY, event1 -> {
             Map.Entry<String, Boolean> selected = listView.getSelectionModel().getSelectedItem();
             listView.getItems().remove(selected);
-            removeFromMap(FILE_SOURCES, selected);
+            removeFromMap(FILE_SOURCES, selected.getKey());
         });
         buttonBar.getButtons().get(3).addEventHandler(ActionEvent.ANY, event1 -> {
             Map.Entry<String, Boolean> selected = listView.getSelectionModel().getSelectedItem();
