@@ -29,19 +29,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.ChoiceBoxListCell;
 import javafx.scene.control.cell.ChoiceBoxTableCell;
 import javafx.scene.layout.AnchorPane;
@@ -268,6 +256,11 @@ public class Controller {
     // DIALOGS AND SIMILAR UI COMPONENTS
     // ============================================================================================
 
+    private static void setThemeForDialog(DialogPane pane) {
+        if (getPref(DARK_THEME))
+            pane.getStylesheets().add(DARK_CSS);
+    }
+
     private void attrInputDialog(@Nullable String string) {
         boolean edit = string != null;
         Dialog<String> dialog = new Dialog<>();
@@ -278,6 +271,7 @@ public class Controller {
             dialog.setHeaderText("Please enter a new Attribute");
         }
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes()
                 .addAll(
                         ButtonType.APPLY,
@@ -373,6 +367,7 @@ public class Controller {
             dialog.setHeaderText("Please enter a new Key Configuration");
         }
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes()
                 .addAll(
                         ButtonType.APPLY,
@@ -513,6 +508,7 @@ public class Controller {
         else
             dialog.setHeaderText("Enter A Name And a Notice");
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes()
                 .addAll(
                         ButtonType.APPLY,
@@ -601,6 +597,7 @@ public class Controller {
         dialog.setTitle(title);
         dialog.setHeaderText(header);
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
                 ButtonType.CANCEL
@@ -669,6 +666,7 @@ public class Controller {
         dialog.setTitle("General Settings");
         dialog.setHeaderText("Adb Settings");
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
                 ButtonType.CANCEL
@@ -769,6 +767,7 @@ public class Controller {
         dialog.setTitle("Other Preferences");
         dialog.setHeaderText("Other less important Preferences");
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
                 ButtonType.CANCEL
@@ -800,6 +799,7 @@ public class Controller {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Adb Devices");
         dialog.setHeaderText("Edit Name and Push Path of an Adb Device");
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes().addAll(
                 ButtonType.APPLY,
                 ButtonType.CANCEL
@@ -848,6 +848,7 @@ public class Controller {
 
     public void setModulePackage() {
         TextInputDialog inputDialog = new TextInputDialog();
+        setThemeForDialog(inputDialog.getDialogPane());
         inputDialog.setTitle("General Settings");
         inputDialog.setHeaderText("Set Module Package");
         inputDialog.setContentText("The Module Package Name is used to determine which files and code will be included in the Pack.\nAll Files in this Java Package will be included (and SubFiles of course).\n\nSnapTools uses for example \"com.ljmu.andre.snaptools.ModulePack\"\n\nIn case this PackageName is wrong, your pack will either not be compiled or won't work at all.");
@@ -887,6 +888,7 @@ public class Controller {
         dialog.setTitle("Manual Project Sources");
         dialog.setHeaderText("Manually set project sources");
 
+        setThemeForDialog(dialog.getDialogPane());
         dialog.getDialogPane().getButtonTypes()
                 .addAll(ButtonType.APPLY,
                         ButtonType.CANCEL
