@@ -1,0 +1,38 @@
+[
+  {
+    "SavedConfigName": "Default SnapTools  Configuration",
+    "SavedConfigNotices": "Default Configuration for a SnapTools ModulePack",
+    "ModulePackage": "com.ljmu.andre.snaptools.ModulePack",
+    "ModuleSources": {
+      "/app/build/tmp/kotlin-classes/packRelease/": true,
+      "/app/build/tmp/kotlin-classes/packDebug/": false,
+      "/app/build/intermediates/javac/packRelease/classes/": true,
+      "/app/build/intermediates/javac/packDebug/classes/": false
+    },
+    "Attributes": [
+      "Development=TRUE",
+      "PackVersion=1.0.0.0",
+      "Flavour=prod",
+      "Type=Premium",
+      "SCVersion=10.41.6.0"
+    ]
+  },
+  {
+    "SavedConfigName": "Akrolyb Pack Configuration Template",
+    "SavedConfigNotices": "Configuration Template to easily create an Akrolyb. See sample App and Pack System implementation",
+    "ModulePackage": "com.jaqxues.akrolyb.sample.pack",
+    "ModuleSources": {
+      "/app/build/tmp/kotlin-classes/packRelease/": true,
+      "/app/build/tmp/kotlin-classes/packDebug/": false,
+      "/app/build/intermediates/javac/packRelease/classes/": true,
+      "/app/build/intermediates/javac/packDebug/classes/": false
+    },
+    "Attributes": [
+      "Development=TRUE",
+      "PackVersionCode=1",
+      "PackVersion=1.0.0",
+      "MinApkVersionCode=1",
+      "PackImpl=com.jaqxues.akrolyb.sample.pack.PackImpl"
+    ]
+  }
+]
