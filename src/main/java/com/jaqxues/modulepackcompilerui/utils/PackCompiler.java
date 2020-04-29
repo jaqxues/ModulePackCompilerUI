@@ -115,7 +115,7 @@ public class PackCompiler {
             if (vAdbDev.isConnected()) {
                 JadbDevice jadbDevice = vAdbDev.getDevice();
                 try {
-                    jadbDevice.push(new File(file.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar")), new RemoteFile(vAdbDev.getPushPath() + file.getName() + (signed ? ".jar" : "_unsigned.jar")));
+                    jadbDevice.push(new File(file.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar")), new RemoteFile(Paths.get(vAdbDev.getPushPath(), file.getName() + (signed ? ".jar" : "_unsigned.jar")).toString()));
                 } catch (Exception e) {
                     exceptions.add(e);
                 }
