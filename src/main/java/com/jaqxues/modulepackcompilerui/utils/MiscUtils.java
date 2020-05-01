@@ -1,5 +1,6 @@
 package com.jaqxues.modulepackcompilerui.utils;
 
+import com.jaqxues.modulepackcompilerui.Controller;
 import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 
 import java.io.File;
@@ -18,9 +19,11 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.DialogPane;
 import javafx.scene.layout.Region;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.DARK_THEME;
 import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE_PACKAGE;
 
 /**
@@ -29,6 +32,7 @@ import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.MODULE
  */
 
 public class MiscUtils {
+    public static final String DARK_CSS = "css/modena-dark.css";
 
     /**
      * Used instead of having duplicates throughout the project for dx.bat and copying files.
@@ -59,9 +63,11 @@ public class MiscUtils {
     public static void showAlert(Alert.AlertType alertType, String title, String header, String message) {
         showAlert(alertType, title, header, message, -1d, -1d);
     }
+
     public static void showAlert(Alert.AlertType alertType, String title, String header, String message, double width, double height) {
         Runnable runnable = () -> {
             Alert alert = new Alert(alertType);
+            setThemeForDialog(alert.getDialogPane());
             if (width != -1 && height != -1) {
                 alert.getDialogPane().setMinWidth(Region.USE_PREF_SIZE);
                 alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
@@ -140,5 +146,10 @@ public class MiscUtils {
             file.replaceAll(" ", "\\ ");
         }
         return file;
+    }
+
+    public static void setThemeForDialog(DialogPane pane) {
+        if (getPref(DARK_THEME))
+            pane.getStylesheets().add(DARK_CSS);
     }
 }
