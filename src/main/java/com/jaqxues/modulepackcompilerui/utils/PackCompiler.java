@@ -279,7 +279,7 @@ public class PackCompiler {
 
     private static Set<String> getClassNames(Set<String> names, File path) {
         for (File file : Objects.requireNonNull(path.listFiles())) {
-            if (file.isFile() && path.getAbsolutePath().contains(MiscUtils.getMPFolder().replaceAll("\\\\", File.separator))) {
+            if (file.isFile()) {
                 names.add(file.getAbsolutePath());
             } else if (file.isDirectory()) {
                 getClassNames(names, file);
