@@ -4,23 +4,38 @@ import com.jaqxues.modulepackcompilerui.exceptions.CMDException;
 import com.jaqxues.modulepackcompilerui.exceptions.NotCompiledException;
 import com.jaqxues.modulepackcompilerui.models.SignConfigModel;
 import com.jaqxues.modulepackcompilerui.models.VirtualAdbDeviceModel;
-import javafx.scene.control.Alert;
-import se.vidstige.jadb.JadbDevice;
-import se.vidstige.jadb.RemoteFile;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import javafx.scene.control.Alert;
+import se.vidstige.jadb.JadbDevice;
+import se.vidstige.jadb.RemoteFile;
+
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.*;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -277,10 +292,10 @@ public class PackCompiler {
         PackCompiler.compiling.set(compiling);
     }
 
-    private static Set<String> getClassNames(Set<String> names, File path) {
+    private static Set<Path> getClassNames(Set<Path> names, File path) {
         for (File file : Objects.requireNonNull(path.listFiles())) {
             if (file.isFile()) {
-                names.add(file.getAbsolutePath());
+                names.add(file.toPath());
             } else if (file.isDirectory()) {
                 getClassNames(names, file);
             }
@@ -296,14 +311,17 @@ public class PackCompiler {
      * @param manifest The manifest file for the new Jar
      * @return An Array containing the Commands
      */
-    private String[] getCommands(File manifest) {
+    private String[] getCommands(File manifest) throws Exception {
         String jarExe = MiscUtils.executableCMD(getPref(JDK_INSTALLATION_PATH), "/bin/jar", "exe");
-        String d8Exec = MiscUtils.executableCMD(getPref(SDK_BUILD_TOOLS), "/d8", "bat");
         String[] commands = new String[]{
-                String.format("%s uf %s %s/%s", jarExe, preCompiledSToolsJar.getAbsolutePath(), compiledPath.getAbsolutePath(), MiscUtils.getMPFolder()),
-                String.format("%s --output %s_unsigned.jar %s", d8Exec, jarTarget.getAbsolutePath(), String.join(" ", getClassNames(new HashSet<>(), compiledPath))),
                 String.format("%s umf %s %s_unsigned.jar", jarExe, manifest.getAbsolutePath(), jarTarget.getAbsolutePath())
         };
+
+        new D8Wrapper(new File((String) getPref(SDK_BUILD_TOOLS), "lib/d8.jar"))
+                .addProgramFiles(getClassNames(new HashSet<>(), compiledPath))
+                .setDexOutput(new File(jarTarget.getAbsolutePath() + "_unsigned.jar").toPath())
+                .runCommand();
+
         for (int i = 0; i < commands.length; i++) {
             // Windows Stuff - Pretty Printing
             if (!File.separator.equals("/")) {
