@@ -300,7 +300,7 @@ public class Controller {
             if (!nameTxt.isEmpty() && !valueTxt.isEmpty()) {
 
                 if (!nameTxt.matches("^[a-zA-Z0-9]+$") ||
-                        !valueTxt.matches("^[a-zA-Z0-9.]+$")) {
+                        !valueTxt.matches("^[a-zA-Z0-9. ]+$")) {
                     MiscUtils.showAlert(
                             Alert.AlertType.INFORMATION,
                             "Attributes Manager",

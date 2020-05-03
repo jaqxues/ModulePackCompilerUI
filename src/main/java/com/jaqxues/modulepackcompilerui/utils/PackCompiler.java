@@ -147,7 +147,7 @@ public class PackCompiler {
         }
         if (type == null || scVersion == null || flavour == null)
             return "";
-        return getSTFileNameFromTemplate(type, scVersion, flavour, packVersion);
+        return getSTFileNameFromTemplate(type, scVersion, flavour, packVersion).replace(" ", "_");
     }
 
     /**
