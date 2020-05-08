@@ -129,10 +129,11 @@ public class PackCompiler {
         for (VirtualAdbDeviceModel vAdbDev : vAdbDevs) {
             if (vAdbDev.isConnected()) {
                 JadbDevice jadbDevice = vAdbDev.getDevice();
+                String path = Paths.get(vAdbDev.getPushPath(), file.getName() + (signed ? ".jar" : "_unsigned.jar")).toString();
                 try {
-                    jadbDevice.push(new File(file.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar")), new RemoteFile(Paths.get(vAdbDev.getPushPath(), file.getName() + (signed ? ".jar" : "_unsigned.jar")).toString()));
+                    jadbDevice.push(new File(file.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar")), new RemoteFile(path));
                 } catch (Exception e) {
-                    exceptions.add(e);
+                    exceptions.add(new Exception("Could not push file to path " + path, e));
                 }
             }
         }
@@ -275,7 +276,9 @@ public class PackCompiler {
         if (getPref(ADB_PUSH_TOGGLE)) {
             List<Exception> exceptions = adbPush(jarTarget, jadbDevices);
             if (exceptions.size() > 0) {
-                LogUtils.getLogger().error("One or more errors while pushing the Files to the Adb Device.", Arrays.deepToString(exceptions.toArray()));
+                for (Exception ex : exceptions) {
+                    LogUtils.getLogger().error("One or more errors while pushing the Files to the Adb Device.", ex);
+                }
                 MiscUtils.showAlert(
                         Alert.AlertType.ERROR,
                         "Adb Push",

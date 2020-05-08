@@ -18,7 +18,7 @@ public enum PreferencesDef {
     PROJECT_ROOT("ProjectRoot", String.class, null),
     MODULE_PACKAGE("ModulePackage", String.class, null),
     SHOW_PASSWORDS("ShowPasswords", Boolean.class, false),
-    FILE_SOURCES("FileSources", new TypeToken<LinkedHashMap<String, Boolean>>() {}.getType(), null),
+    FILE_SOURCES("FileSources", new TypeToken<LinkedHashMap<String, Boolean>>() {}.getType(), new LinkedHashMap<String, Boolean>()),
     ADB_PUSH_TOGGLE("AdbPushToggle", Boolean.class, false),
     ATTRIBUTES("Attributes", ArrayList.class, new ArrayList<String>()),
     SIGN_PACK("SignPack", Boolean.class, true),
