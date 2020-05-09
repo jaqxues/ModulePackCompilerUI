@@ -317,12 +317,12 @@ public class PackCompiler {
     private String[] getCommands(File manifest) throws Exception {
         String jarExe = MiscUtils.executableCMD(getPref(JDK_INSTALLATION_PATH), "/bin/jar", "exe");
         String[] commands = new String[]{
-                String.format("%s umf %s %s_unsigned.jar", jarExe, manifest.getAbsolutePath(), jarTarget.getAbsolutePath())
+                String.format("%s cfm %s_unsigned.jar %s -C %s classes.dex", jarExe, jarTarget.getAbsolutePath(), manifest.getAbsolutePath(), currentPath.getAbsolutePath())
         };
 
         new D8Wrapper(new File((String) getPref(SDK_BUILD_TOOLS), "lib/d8.jar"))
                 .addProgramFiles(getClassNames(new HashSet<>(), compiledPath))
-                .setDexOutput(new File(jarTarget.getAbsolutePath() + "_unsigned.jar").toPath())
+                .setDexOutput(currentPath.toPath())
                 .runCommand();
 
         for (int i = 0; i < commands.length; i++) {
