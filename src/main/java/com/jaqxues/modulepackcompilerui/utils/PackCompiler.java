@@ -129,7 +129,9 @@ public class PackCompiler {
         for (VirtualAdbDeviceModel vAdbDev : vAdbDevs) {
             if (vAdbDev.isConnected()) {
                 JadbDevice jadbDevice = vAdbDev.getDevice();
-                String path = Paths.get(vAdbDev.getPushPath(), file.getName() + (signed ? ".jar" : "_unsigned.jar")).toString();
+                String path = Paths.get(vAdbDev.getPushPath(), file.getName() + (signed ? ".jar" : "_unsigned.jar")).toString()
+                        // Android does not play well with "\" in paths
+                        .replace('\\', '/');
                 try {
                     jadbDevice.push(new File(file.getAbsolutePath() + (signed ? ".jar" : "_unsigned.jar")), new RemoteFile(path));
                 } catch (Exception e) {
