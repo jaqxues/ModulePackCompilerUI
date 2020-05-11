@@ -32,10 +32,7 @@ import se.vidstige.jadb.JadbDevice;
 import se.vidstige.jadb.RemoteFile;
 
 import static com.jaqxues.modulepackcompilerui.preferences.PreferenceManager.getPref;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.ADB_PUSH_TOGGLE;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.JDK_INSTALLATION_PATH;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.PROJECT_ROOT;
-import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.SDK_BUILD_TOOLS;
+import static com.jaqxues.modulepackcompilerui.preferences.PreferencesDef.*;
 
 /**
  * This file was created by Jacques (jaqxues) in the Project ModulePackCompilerUI.<br>
@@ -272,7 +269,7 @@ public class PackCompiler {
             throw new NotCompiledException("Error while executing commands in CMD", e);
         }
 
-        if (signConfig != null)
+        if ((boolean) getPref(SIGN_PACK) && signConfig != null)
             signOutput();
 
         if (getPref(ADB_PUSH_TOGGLE)) {
